@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "116054297127",
+    "project_id": "edumetrics-tfg",
+    "storage_bucket": "edumetrics-tfg.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:116054297127:android:fc96ae504bcd44c267dc02",
+        "android_client_info": {
+          "package_name": "com.example.edumetrics"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFKWPZ9ysTLlJpj2puMuQsgM3DN3qgmv4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
