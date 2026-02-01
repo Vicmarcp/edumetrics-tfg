@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'screens/login_screen.dart';  // ← Cambia esta línea
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,21 +22,7 @@ class EduMetricsApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
-    );
-  }
-}
-
-// Pantalla de login temporal
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text('Login Screen - Próximamente'),
-      ),
+      home: const LoginScreen(),  // Ya está correcto
     );
   }
 }
