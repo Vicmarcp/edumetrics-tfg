@@ -90,6 +90,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // LOGIN EXITOSO - Navegar a home (Pregunta 3)
       if (mounted) {
+        // Cancelar cualquier SnackBar activo antes de navegar
+        ScaffoldMessenger.of(context).clearSnackBars();
+
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
