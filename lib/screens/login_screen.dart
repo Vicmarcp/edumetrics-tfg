@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
+import '../core/app_mode.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,29 +11,22 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controladores para los campos de texto
-  // Estos nos permiten leer lo que el usuario escribe
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  // Key para validar el formulario
   final _formKey = GlobalKey<FormState>();
 
-  // Estados de la interfaz
-  bool _isLoading = false;           // ¿Está procesando el login?
-  bool _obscurePassword = true;       // ¿Ocultar contraseña?
-  String _emailError = '';            // Mensaje de error del email
-  String _passwordError = '';         // Mensaje de error de contraseña
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+  String _emailError = '';
+  String _passwordError = '';
 
   @override
   void dispose() {
-    // Liberar recursos cuando se destruye el widget
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // VALIDACIÓN EN TIEMPO REAL DEL EMAIL (Pregunta 4)
   void _validateEmail(String value) {
     setState(() {
       if (value.isEmpty) {
@@ -45,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  // VALIDACIÓN EN TIEMPO REAL DE CONTRASEÑA (Pregunta 4)
   void _validatePassword(String value) {
     setState(() {
       if (value.isEmpty) {
@@ -58,9 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  // FUNCIÓN DE LOGIN PRINCIPAL
   Future<void> _handleLogin() async {
-    // Validar antes de intentar login (Pregunta 4)
     if (_emailError.isNotEmpty || _passwordError.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor corrige los errores')),
@@ -75,31 +66,23 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // ESTADO DE CARGA (Pregunta 2)
-    // Deshabilitamos el botón cambiando _isLoading a true
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Intentar login con Firebase
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      // LOGIN EXITOSO - Navegar a home (Pregunta 3)
+      // LOGIN EXITOSO - Mostrar selector de modo
       if (mounted) {
-        // Cancelar cualquier SnackBar activo antes de navegar
         ScaffoldMessenger.of(context).clearSnackBars();
-
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        _showModeSelector();
       }
 
     } on FirebaseAuthException catch (e) {
-      // LOGIN FALLIDO - Mostrar error específico
       String errorMessage = 'Error al iniciar sesión';
 
       if (e.code == 'user-not-found') {
@@ -113,7 +96,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        // Mostrar mensaje de error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -128,7 +110,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
     } finally {
-      // Rehabilitar el botón
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -137,7 +118,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // RECUPERACIÓN DE CONTRASEÑA
   void _showPasswordRecovery() {
     showDialog(
       context: context,
@@ -188,6 +168,70 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // NUEVA FUNCIÓN: Selector de modo
+  void _showModeSelector() {
+    final suggestedMode = AppModeProvider.suggestMode(context);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Selecciona el modo de uso'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Esto optimizará la interfaz para tu dispositivo',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            if (suggestedMode == AppMode.pizarra)
+              Text(
+                '💡 Detectamos una pantalla grande. ¿Estás en una pizarra?',
+                style: TextStyle(
+                  color: Colors.blue[700],
+                  fontSize: 13,
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          OutlinedButton.icon(
+            icon: const Icon(Icons.laptop),
+            label: const Text('Ordenador\n(Gráficas y gestión)'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => const HomeScreen(mode: AppMode.desktop),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.touch_app),
+            label: const Text('Pizarra/Tablet\n(Actividades táctiles)'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: suggestedMode == AppMode.pizarra
+                  ? Colors.blue
+                  : null,
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => const HomeScreen(mode: AppMode.pizarra),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -208,7 +252,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Logo o título
                     Icon(
                       Icons.school,
                       size: 64,
@@ -231,7 +274,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // CAMPO EMAIL CON VALIDACIÓN EN TIEMPO REAL
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -249,7 +291,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // CAMPO CONTRASEÑA CON TOGGLE DE VISIBILIDAD (Pregunta 1)
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -260,7 +301,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        // ICONO DEL OJO (Pregunta 1)
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -279,7 +319,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // BOTÓN DE LOGIN CON ESTADO DE CARGA (Pregunta 2)
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -314,7 +353,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // LINK DE RECUPERACIÓN DE CONTRASEÑA
                     TextButton(
                       onPressed: _isLoading ? null : _showPasswordRecovery,
                       child: const Text('¿Olvidaste tu contraseña?'),
