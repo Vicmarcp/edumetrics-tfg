@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'add_student_screen.dart';
 
 class StudentsManagementScreen extends StatelessWidget {
   const StudentsManagementScreen({super.key});
@@ -43,7 +44,11 @@ class StudentsManagementScreen extends StatelessWidget {
                     icon: const Icon(Icons.add),
                     label: const Text('Crear primer alumno'),
                     onPressed: () {
-                      // TODO: Navegar a crear alumno
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AddStudentScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -96,7 +101,11 @@ class StudentsManagementScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: Crear alumno
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const AddStudentScreen(),
+            ),
+          );
         },
         icon: const Icon(Icons.add),
         label: const Text('Nuevo Alumno'),
