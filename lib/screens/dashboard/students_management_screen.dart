@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'add_student_screen.dart';
+import 'edit_student_screen.dart';
 
 class StudentsManagementScreen extends StatelessWidget {
   const StudentsManagementScreen({super.key});
@@ -81,14 +82,23 @@ class StudentsManagementScreen extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.edit),
                         onPressed: () {
-                          // TODO: Editar alumno
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => EditStudentScreen(
+                                studentId: doc.id,
+                                currentName: data['name'] ?? '',
+                                currentClass: data['className'] ?? '',
+                                currentAvatarId: data['avatarId'] ?? 1,
+                              ),
+                            ),
+                          );
                         },
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete),
                         color: Colors.red,
                         onPressed: () {
-                          // TODO: Eliminar alumno
+                          _showDeleteConfirmation(context, doc.id, data['name'] ?? 'este alumno');
                         },
                       ),
                     ],
@@ -109,6 +119,51 @@ class StudentsManagementScreen extends StatelessWidget {
         },
         icon: const Icon(Icons.add),
         label: const Text('Nuevo Alumno'),
+      ),
+    );
+  }
+  void _showDeleteConfirmation(BuildContext context, String studentId, String studentName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Text('¿Estás seguro de que quieres dar de baja a $studentName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                // Dar de baja (no borrar, solo marcar como inactivo)
+                await FirebaseFirestore.instance
+                    .collection('students')
+                    .doc(studentId)
+                    .update({'isActive': false});
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Alumno dado de baja correctamente'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
       ),
     );
   }
