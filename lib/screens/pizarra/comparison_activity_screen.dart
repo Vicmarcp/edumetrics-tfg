@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
+import 'activity_summary_screen.dart';
 
 class ComparisonActivityScreen extends StatefulWidget {
   final String studentId;
@@ -26,6 +27,9 @@ class _ComparisonActivityScreenState extends State<ComparisonActivityScreen> {
 
   bool _showFeedback = false;
   bool _isCorrect = false;
+
+  int _correctCount = 0;
+  final List<int> _times = [];
 
   @override
   void initState() {
@@ -65,6 +69,9 @@ class _ComparisonActivityScreenState extends State<ComparisonActivityScreen> {
     final question = _questions[_currentQuestion];
     final correct = answer == question['correctAnswer'];
 
+    if (correct) _correctCount++;
+    _times.add(timeSeconds);
+
     setState(() {
       _showFeedback = true;
       _isCorrect = correct;
@@ -88,7 +95,7 @@ class _ComparisonActivityScreenState extends State<ComparisonActivityScreen> {
         });
         _startQuestion();
       } else {
-        _showCompletionDialog();
+        _showSummary();
       }
     }
   }
@@ -132,22 +139,15 @@ class _ComparisonActivityScreenState extends State<ComparisonActivityScreen> {
     }
   }
 
-  void _showCompletionDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('¡Actividad completada!'),
-        content: Text('${widget.studentName} ha terminado todas las preguntas.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Cerrar diálogo
-              Navigator.of(context).pop(); // Volver a selector
-            },
-            child: const Text('Volver'),
-          ),
-        ],
+  void _showSummary() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => ActivitySummaryScreen(
+          studentName: widget.studentName,
+          correctAnswers: _correctCount,
+          totalQuestions: _totalQuestions,
+          timesInSeconds: _times,
+        ),
       ),
     );
   }
