@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/app_mode.dart';
 import 'dashboard/students_management_screen.dart';
+import '../screens/pizarra/student_selector_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final AppMode mode;
@@ -72,9 +73,10 @@ class HomeScreen extends StatelessWidget {
           // Botones grandes para pizarra
           ElevatedButton(
             onPressed: () {
-              // TODO: Navegar a selector de alumno
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Próximamente: Selector de alumno')),
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const StudentSelectorScreen(),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
