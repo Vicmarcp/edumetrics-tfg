@@ -21,7 +21,7 @@ class HomeScreen extends StatelessWidget {
         actions: [
           // Indicador de modo
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 8),
             child: Chip(
               avatar: Icon(
                 mode == AppMode.pizarra ? Icons.touch_app : Icons.laptop,
@@ -32,6 +32,23 @@ class HomeScreen extends StatelessWidget {
                 style: const TextStyle(fontSize: 12),
               ),
             ),
+          ),
+          // NUEVO: Botón para cambiar de modo
+          IconButton(
+            icon: const Icon(Icons.swap_horiz),
+            tooltip: 'Cambiar modo',
+            onPressed: () {
+              // Navegar al otro modo
+              final newMode = mode == AppMode.pizarra
+                  ? AppMode.desktop
+                  : AppMode.pizarra;
+
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => HomeScreen(mode: newMode),
+                ),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.logout),

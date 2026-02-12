@@ -316,6 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       onChanged: _validatePassword,
                       enabled: !_isLoading,
+                      onSubmitted: (_) => _handleLogin(),
                     ),
                     const SizedBox(height: 24),
 
