@@ -25,7 +25,7 @@ class ActivitySummaryScreen extends StatelessWidget {
     // Emoji según rendimiento
     String emoji;
     String message;
-    Color color;
+    MaterialColor color;
 
     if (percentage >= 90) {
       emoji = '🌟';
