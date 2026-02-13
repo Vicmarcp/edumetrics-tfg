@@ -48,13 +48,14 @@ class ActivitySummaryScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: color.shade50,
       body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 600),
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
+        child: SingleChildScrollView(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 600),
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
                 emoji,
                 style: const TextStyle(fontSize: 120),
               ),
@@ -127,6 +128,7 @@ class ActivitySummaryScreen extends StatelessWidget {
           ),
         ),
       ),
+      )
     );
   }
 }
