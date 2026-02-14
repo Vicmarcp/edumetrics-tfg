@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'comparison_activity_screen.dart';
+import 'sequence_activity_screen.dart';
 
 class StudentSelectorScreen extends StatelessWidget {
   const StudentSelectorScreen({super.key});
@@ -69,14 +70,8 @@ class StudentSelectorScreen extends StatelessWidget {
                 ),
                 child: InkWell(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ComparisonActivityScreen(
-                          studentId: doc.id,
-                          studentName: studentName,
-                        ),
-                      ),
-                    );
+                    // Mostrar diálogo para elegir actividad
+                    _showActivitySelector(context, doc.id, studentName);
                   },
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
@@ -118,6 +113,98 @@ class StudentSelectorScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+  void _showActivitySelector(BuildContext context, String studentId, String studentName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Selecciona una actividad'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ActivityButton(
+              icon: Icons.compare_arrows,
+              label: 'Comparación Numérica',
+              color: Colors.blue,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ComparisonActivityScreen(
+                      studentId: studentId,
+                      studentName: studentName,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _ActivityButton(
+              icon: Icons.format_list_numbered,
+              label: 'Secuencia Numérica',
+              color: Colors.green,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SequenceActivityScreen(
+                      studentId: studentId,
+                      studentName: studentName,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _ActivityButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final MaterialColor color;
+  final VoidCallback onTap;
+
+  const _ActivityButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color, width: 2),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
