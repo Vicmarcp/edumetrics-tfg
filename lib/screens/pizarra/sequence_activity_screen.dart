@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'base_activity_screen.dart';
+import '../../widgets/numeric_keypad.dart';
 
 class SequenceActivityScreen extends BaseActivityScreen {
   const SequenceActivityScreen({
@@ -14,19 +15,6 @@ class SequenceActivityScreen extends BaseActivityScreen {
 }
 
 class _SequenceActivityState extends BaseActivityState<SequenceActivityScreen> {
-  final TextEditingController _answerController = TextEditingController();
-
-  @override
-  void dispose() {
-    _answerController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void startQuestion() {
-    super.startQuestion();
-    _answerController.clear();
-  }
 
   @override
   List<Map<String, dynamic>> generateQuestions() {
@@ -75,41 +63,13 @@ class _SequenceActivityState extends BaseActivityState<SequenceActivityScreen> {
       children: [
         const Text(
           'Escribe el número que falta:',
-          style: TextStyle(fontSize: 24),
+          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w500),
         ),
-        const SizedBox(height: 24),
-        Container(
-          width: 200,
-          child: TextField(
-            controller: _answerController,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(width: 3),
-              ),
-              hintText: '?',
-              hintStyle: TextStyle(color: Colors.grey[400]),
-            ),
-            enabled: !showFeedback,
-            onSubmitted: (_) => _submitAnswer(),
-          ),
-        ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: showFeedback ? null : _submitAnswer,
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(200, 80),
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          child: const Text('COMPROBAR'),
+        const SizedBox(height: 32),
+        NumericKeypad(
+          maxDigits: 2, // Secuencia puede tener números hasta 20 (2 dígitos)
+          onSubmit: (value) => handleAnswer(value),
+          showDecenas: false, // Por ahora sin color naranja
         ),
       ],
     );
@@ -123,16 +83,6 @@ class _SequenceActivityState extends BaseActivityState<SequenceActivityScreen> {
     } catch (e) {
       return false;
     }
-  }
-
-  void _submitAnswer() {
-    if (_answerController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor escribe un número')),
-      );
-      return;
-    }
-    handleAnswer(_answerController.text.trim());
   }
 
   Widget _buildNumberCard(String text, {bool isQuestion = false}) {
