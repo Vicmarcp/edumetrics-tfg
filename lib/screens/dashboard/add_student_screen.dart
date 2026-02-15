@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class AddStudentScreen extends StatefulWidget {
   const AddStudentScreen({super.key});
@@ -132,7 +132,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
               // Selector de clase
               DropdownButtonFormField<String>(
-                value: _selectedClass,
+                initialValue: _selectedClass,
                 decoration: InputDecoration(
                   labelText: 'Clase',
                   prefixIcon: const Icon(Icons.class_),

@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'home_screen.dart';
+import 'package:flutter/material.dart';
+
 import '../core/app_mode.dart';
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -147,6 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 await FirebaseAuth.instance.sendPasswordResetEmail(
                   email: _emailController.text.trim(),
                 );
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -155,6 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 );
               } catch (e) {
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Error: ${e.toString()}')),

@@ -39,35 +39,38 @@ class _PlaceValueActivityState extends BaseActivityState<PlaceValueActivityScree
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final number = question['number'] as int;
     final askTens = question['askTens'] as bool;
-    final digits = number.toString().split('');
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          askTens ? '¿Cuántas DECENAS tiene?' : '¿Cuántas UNIDADES tiene?',
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w500),
+        // Mostrar el número completo, sin pistas
+        Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            color: Colors.purple.shade50,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.purple, width: 4),
+          ),
+          child: Center(
+            child: Text(
+              number.toString(),
+              style: const TextStyle(
+                fontSize: 100,
+                fontWeight: FontWeight.bold,
+                color: Colors.purple,
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Dígito de decenas
-            _buildDigitCard(
-              digits[0],
-              'D',
-              isHighlighted: askTens,
-              color: Colors.orange,
-            ),
-            const SizedBox(width: 16),
-            // Dígito de unidades
-            _buildDigitCard(
-              digits.length > 1 ? digits[1] : '0',
-              'U',
-              isHighlighted: !askTens,
-              color: Colors.blue,
-            ),
-          ],
+        Text(
+          askTens ? '¿Cuántas DECENAS tiene?' : '¿Cuántas UNIDADES tiene?',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: askTens ? Colors.orange : Colors.blue,
+          ),
         ),
       ],
     );
@@ -90,46 +93,5 @@ class _PlaceValueActivityState extends BaseActivityState<PlaceValueActivityScree
     } catch (e) {
       return false;
     }
-  }
-
-  Widget _buildDigitCard(String digit, String label, {
-    required bool isHighlighted,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 120,
-          height: 120,
-          decoration: BoxDecoration(
-            color: isHighlighted ? color.withOpacity(0.15) : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isHighlighted ? color : Colors.grey.shade300,
-              width: isHighlighted ? 4 : 2,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              digit,
-              style: TextStyle(
-                fontSize: 70,
-                fontWeight: FontWeight.bold,
-                color: isHighlighted ? color : Colors.grey,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: isHighlighted ? color : Colors.grey,
-          ),
-        ),
-      ],
-    );
   }
 }

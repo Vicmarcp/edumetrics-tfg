@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 class EditStudentScreen extends StatefulWidget {
   final String studentId;
@@ -131,7 +131,7 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
               const SizedBox(height: 24),
 
               DropdownButtonFormField<String>(
-                value: _selectedClass,
+                initialValue: _selectedClass,
                 decoration: InputDecoration(
                   labelText: 'Clase',
                   prefixIcon: const Icon(Icons.class_),
