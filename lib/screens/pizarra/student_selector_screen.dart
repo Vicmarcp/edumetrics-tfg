@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 import 'comparison_activity_screen.dart';
+import 'place_value_activity_screen.dart';
 import 'sequence_activity_screen.dart';
 
 class StudentSelectorScreen extends StatelessWidget {
@@ -152,6 +153,24 @@ class StudentSelectorScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => SequenceActivityScreen(
+                      studentId: studentId,
+                      studentName: studentName,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _ActivityButton(
+              icon: Icons.grid_view,
+              label: 'Valor Posicional',
+              color: Colors.orange,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PlaceValueActivityScreen(
                       studentId: studentId,
                       studentName: studentName,
                     ),
