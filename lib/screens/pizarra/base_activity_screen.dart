@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 import 'activity_summary_screen.dart';
 
 abstract class BaseActivityScreen extends StatefulWidget {
@@ -156,23 +157,25 @@ abstract class BaseActivityState<T extends BaseActivityScreen> extends State<T> 
         ],
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Pregunta (cada actividad define cómo se ve)
-            buildQuestionWidget(question),
-
-            // Widget de respuesta (cada actividad define el control)
-            buildAnswerWidget(question),
-
-            // Feedback visual
-            if (showFeedback)
-              Icon(
-                isCorrect ? Icons.check_circle : Icons.cancel,
-                size: 120,
-                color: isCorrect ? Colors.green : Colors.red,
-              ),
-          ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                buildQuestionWidget(question),
+                const SizedBox(height: 32),
+                buildAnswerWidget(question),
+                const SizedBox(height: 32),
+                if (showFeedback)
+                  Icon(
+                    isCorrect ? Icons.check_circle : Icons.cancel,
+                    size: 120,
+                    color: isCorrect ? Colors.green : Colors.red,
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
