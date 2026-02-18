@@ -5,6 +5,7 @@ import 'addition_activity_screen.dart';
 import 'comparison_activity_screen.dart';
 import 'place_value_activity_screen.dart';
 import 'sequence_activity_screen.dart';
+import 'subtraction_activity_screen.dart';
 
 class StudentSelectorScreen extends StatelessWidget {
   const StudentSelectorScreen({super.key});
@@ -190,6 +191,24 @@ class StudentSelectorScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => AdditionActivityScreen(
+                      studentId: studentId,
+                      studentName: studentName,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _ActivityButton(
+              icon: Icons.remove_circle_outline,
+              label: 'Restas Básicas',
+              color: Colors.red,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SubtractionActivityScreen(
                       studentId: studentId,
                       studentName: studentName,
                     ),
