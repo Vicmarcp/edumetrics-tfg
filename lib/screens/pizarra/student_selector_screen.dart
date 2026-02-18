@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'addition_activity_screen.dart';
 import 'comparison_activity_screen.dart';
+import 'missing_vowels_activity_screen.dart';
 import 'place_value_activity_screen.dart';
 import 'sequence_activity_screen.dart';
 import 'subtraction_activity_screen.dart';
@@ -209,6 +210,24 @@ class StudentSelectorScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => SubtractionActivityScreen(
+                      studentId: studentId,
+                      studentName: studentName,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _ActivityButton(
+              icon: Icons.text_fields,
+              label: 'Vocales Perdidas',
+              color: Colors.orange,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MissingVowelsActivityScreen(
                       studentId: studentId,
                       studentName: studentName,
                     ),
