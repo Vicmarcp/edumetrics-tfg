@@ -114,9 +114,7 @@ class _MissingVowelsActivityState
       final hiddenVowel = word[hiddenIndex];
 
       // Construir la palabra con hueco
-      final displayWord = word.substring(0, hiddenIndex) +
-          '_' +
-          word.substring(hiddenIndex + 1);
+      final displayWord = '${word.substring(0, hiddenIndex)}_${word.substring(hiddenIndex + 1)}';
 
       return {
         'word': word,
