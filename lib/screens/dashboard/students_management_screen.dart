@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+
 import 'add_student_screen.dart';
 import 'edit_student_screen.dart';
 
@@ -126,17 +127,17 @@ class StudentsManagementScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Estás seguro de que quieres dar de baja a $studentName?'),
+        title: const Text('Gestionar alumno'),
+        content: Text('¿Qué deseas hacer con $studentName?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
+          // Dar de baja (soft delete)
           TextButton(
             onPressed: () async {
               try {
-                // Dar de baja (no borrar, solo marcar como inactivo)
                 await FirebaseFirestore.instance
                     .collection('students')
                     .doc(studentId)
@@ -160,8 +161,79 @@ class StudentsManagementScreen extends StatelessWidget {
                 }
               }
             },
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            child: const Text('Dar de baja'),
+          ),
+          // Eliminación permanente (RGPD)
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showPermanentDeleteConfirmation(context, studentId, studentName);
+            },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Eliminar'),
+            child: const Text('Eliminar permanentemente'),
+          ),
+        ],
+      ),
+    );
+  }
+  void _showPermanentDeleteConfirmation(BuildContext context, String studentId, String studentName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('⚠️ Eliminación permanente'),
+        content: Text(
+          '¿Estás seguro de que deseas eliminar PERMANENTEMENTE a $studentName '
+              'y todos sus resultados de actividades?\n\n'
+              'Esta acción NO se puede deshacer y se realiza en cumplimiento '
+              'del derecho de supresión (RGPD Art. 17).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                // 1. Eliminar todos los resultados del alumno
+                final results = await FirebaseFirestore.instance
+                    .collection('results')
+                    .where('studentId', isEqualTo: studentId)
+                    .get();
+
+                final batch = FirebaseFirestore.instance.batch();
+                for (final doc in results.docs) {
+                  batch.delete(doc.reference);
+                }
+
+                // 2. Eliminar el documento del alumno
+                batch.delete(
+                  FirebaseFirestore.instance.collection('students').doc(studentId),
+                );
+
+                await batch.commit();
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Alumno y todos sus datos eliminados permanentemente'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('ELIMINAR TODO'),
           ),
         ],
       ),

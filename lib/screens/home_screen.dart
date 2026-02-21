@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 import '../core/app_mode.dart';
-import 'dashboard/students_management_screen.dart';
 import '../screens/pizarra/student_selector_screen.dart';
+import 'dashboard/students_management_screen.dart';
+import 'privacy_policy_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final AppMode mode;
@@ -109,6 +111,18 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          TextButton.icon(
+            icon: const Icon(Icons.privacy_tip, size: 20),
+            label: const Text('Política de Privacidad'),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PrivacyPolicyScreen(),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -165,6 +179,21 @@ class HomeScreen extends StatelessWidget {
                   },
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(Icons.privacy_tip, size: 18),
+              label: const Text('Política de Privacidad'),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacyPolicyScreen(),
+                  ),
+                );
+              },
             ),
           ),
         ],

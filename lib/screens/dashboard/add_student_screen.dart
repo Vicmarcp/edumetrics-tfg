@@ -16,6 +16,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   String? _selectedClass;
   int? _selectedAvatarId;
   bool _isLoading = false;
+  bool _consentChecked = false;
 
   final List<String> _classes = [
     '1ºA', '1ºB', '1ºC',
@@ -29,6 +30,15 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
   }
 
   Future<void> _saveStudent() async {
+    if (!_consentChecked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes confirmar que se dispone del consentimiento parental'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     // Validar que todos los campos estén completos
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -234,7 +244,22 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               ),
 
               const SizedBox(height: 32),
-
+              // Checkbox de consentimiento
+              CheckboxListTile(
+                value: _consentChecked,
+                onChanged: _isLoading ? null : (value) {
+                  setState(() {
+                    _consentChecked = value ?? false;
+                  });
+                },
+                title: const Text(
+                  'Confirmo que el centro dispone del consentimiento de los padres/tutores legales para el tratamiento de datos de este alumno (Art. 7 LOPDGDD).',
+                  style: TextStyle(fontSize: 13),
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 16),
               // Botón guardar
               SizedBox(
                 width: double.infinity,
