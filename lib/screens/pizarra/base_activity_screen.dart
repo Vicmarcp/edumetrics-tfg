@@ -42,10 +42,12 @@ abstract class BaseActivityState<T extends BaseActivityScreen> extends State<T> 
   Widget buildQuestionWidget(Map<String, dynamic> question);
   Widget buildAnswerWidget(Map<String, dynamic> question);
   bool validateAnswer(Map<String, dynamic> question, dynamic userAnswer);
+  void onNewQuestion(Map<String, dynamic> question) {}
 
   // MÉTODOS CON IMPLEMENTACIÓN - Compartidos por todas las actividades
   void startQuestion() {
     questionStartTime = DateTime.now();
+    onNewQuestion(questions[currentQuestion]);
   }
 
   Future<void> handleAnswer(dynamic userAnswer) async {

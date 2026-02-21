@@ -2,11 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import 'addition_activity_screen.dart';
+import 'capitalization_activity_screen.dart';
 import 'comparison_activity_screen.dart';
 import 'missing_vowels_activity_screen.dart';
 import 'place_value_activity_screen.dart';
+import 'sentence_order_activity_screen.dart';
 import 'sequence_activity_screen.dart';
 import 'subtraction_activity_screen.dart';
+import 'syllable_complete_activity_screen.dart';
 import 'syllable_count_activity_screen.dart';
 
 class StudentSelectorScreen extends StatelessWidget {
@@ -126,7 +129,8 @@ class StudentSelectorScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Selecciona una actividad'),
-        content: Column(
+        content: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _ActivityButton(
@@ -254,8 +258,66 @@ class StudentSelectorScreen extends StatelessWidget {
                 );
               },
             ),
+            const SizedBox(height: 12),
+            _ActivityButton(
+              icon: Icons.reorder,
+              label: 'Ordenar Frases',
+              color: Colors.teal,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SentenceOrderActivityScreen(
+                          studentId: studentId,
+                          studentName: studentName,
+                        ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _ActivityButton(
+              icon: Icons.text_increase,
+              label: 'Mayúsculas',
+              color: Colors.deepPurple,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        CapitalizationActivityScreen(
+                          studentId: studentId,
+                          studentName: studentName,
+                        ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _ActivityButton(
+              icon: Icons.extension,
+              label: 'Completar Sílabas',
+              color: Colors.amber,
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SyllableCompleteActivityScreen(
+                          studentId: studentId,
+                          studentName: studentName,
+                        ),
+                  ),
+                );
+              },
+            ),
           ],
         ),
+      ),
       ),
     );
   }
