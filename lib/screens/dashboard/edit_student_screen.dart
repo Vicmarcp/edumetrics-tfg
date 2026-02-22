@@ -35,7 +35,6 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-llenar con datos actuales
     _nameController = TextEditingController(text: widget.currentName);
     _selectedClass = widget.currentClass;
     _selectedAvatarId = widget.currentAvatarId;
@@ -67,7 +66,6 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
     });
 
     try {
-      // Actualizar documento existente
       await FirebaseFirestore.instance
           .collection('students')
           .doc(widget.studentId)
@@ -86,7 +84,6 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
         );
         Navigator.of(context).pop();
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -145,7 +142,9 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                     child: Text(className),
                   );
                 }).toList(),
-                onChanged: _isLoading ? null : (value) {
+                onChanged: _isLoading
+                    ? null
+                    : (value) {
                   setState(() {
                     _selectedClass = value;
                   });
@@ -172,9 +171,13 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                 itemBuilder: (context, index) {
                   final avatarId = index + 1;
                   final isSelected = _selectedAvatarId == avatarId;
+                  final avatarPath =
+                      'assets/avatars/avatar_${avatarId.toString().padLeft(2, '0')}.png';
 
                   return GestureDetector(
-                    onTap: _isLoading ? null : () {
+                    onTap: _isLoading
+                        ? null
+                        : () {
                       setState(() {
                         _selectedAvatarId = avatarId;
                       });
@@ -182,7 +185,8 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isSelected ? Colors.blue : Colors.grey.shade300,
+                          color:
+                          isSelected ? Colors.blue : Colors.grey.shade300,
                           width: isSelected ? 3 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -194,7 +198,7 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.asset(
-                                'assets/avatars/avatar_${avatarId.toString().padLeft(2, '0')}.png',
+                                avatarPath,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Icon(

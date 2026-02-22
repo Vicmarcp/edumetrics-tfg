@@ -26,16 +26,36 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Future<void> _loadSchoolId() async {
-    final user = FirebaseAuth.instance.currentUser;
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user?.uid)
-        .get();
-    if (mounted) {
-      setState(() {
-        _schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
-        _loading = false;
-      });
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (mounted) {
+          setState(() {
+            _schoolId = 'default-school';
+            _loading = false;
+          });
+        }
+        return;
+      }
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _schoolId = 'default-school';
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -90,6 +110,32 @@ class _StudentListTab extends StatelessWidget {
           .orderBy('name')
           .snapshots(),
       builder: (context, snapshot) {
+        // Manejo de errores (índice compuesto, permisos, etc.)
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error al cargar los alumnos',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${snapshot.error}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -97,10 +143,22 @@ class _StudentListTab extends StatelessWidget {
         final students = snapshot.data?.docs ?? [];
 
         if (students.isEmpty) {
-          return const Center(
-            child: Text(
-              'No hay alumnos registrados',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.school_outlined, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                const Text(
+                  'No hay alumnos registrados',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Añade alumnos desde la sección de gestión',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                ),
+              ],
             ),
           );
         }
@@ -111,14 +169,22 @@ class _StudentListTab extends StatelessWidget {
           itemBuilder: (context, index) {
             final student = students[index];
             final data = student.data() as Map<String, dynamic>;
+            final avatarId = data['avatarId'] ?? 1;
+            final avatarPath =
+                'assets/avatars/avatar_${avatarId.toString().padLeft(2, '0')}.png';
 
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundImage: AssetImage(
-                    'assets/avatars/avatar_${data['avatarId'] ?? 1}.png',
-                  ),
+                  backgroundImage: AssetImage(avatarPath),
+                  onBackgroundImageError: (_, _) {},
+                  child: data['avatarId'] == null
+                      ? Text(
+                    (data['name'] ?? '?').substring(0, 1).toUpperCase(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  )
+                      : null,
                 ),
                 title: Text(
                   data['name'] ?? 'Sin nombre',

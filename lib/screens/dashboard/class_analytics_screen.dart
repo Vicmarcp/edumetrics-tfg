@@ -16,6 +16,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
   bool _loading = true;
   String? _selectedClass;
   List<String> _classes = [];
+  String? _errorMessage;
 
   static const Map<String, String> activityNames = {
     'comparison': 'Comparación',
@@ -36,59 +37,94 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
     _loadData();
   }
 
+  /// Carga resultados en lotes de 30 para respetar el límite de whereIn
+  Future<List<QueryDocumentSnapshot>> _loadResultsInBatches(
+      List<String> studentIds) async {
+    final allResults = <QueryDocumentSnapshot>[];
+    const batchSize = 30;
+
+    for (var i = 0; i < studentIds.length; i += batchSize) {
+      final batch = studentIds.sublist(
+        i,
+        i + batchSize > studentIds.length ? studentIds.length : i + batchSize,
+      );
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('results')
+          .where('studentId', whereIn: batch)
+          .get();
+
+      allResults.addAll(snapshot.docs);
+    }
+
+    return allResults;
+  }
+
   Future<void> _loadData() async {
-    // Cargar alumnos activos
-    final studentsSnap = await FirebaseFirestore.instance
-        .collection('students')
-        .where('schoolId', isEqualTo: widget.schoolId)
-        .where('isActive', isEqualTo: true)
-        .get();
+    try {
+      // Cargar alumnos activos del colegio
+      final studentsSnap = await FirebaseFirestore.instance
+          .collection('students')
+          .where('schoolId', isEqualTo: widget.schoolId)
+          .where('isActive', isEqualTo: true)
+          .get();
 
-    final students = <String, Map<String, dynamic>>{};
-    final classes = <String>{};
+      final students = <String, Map<String, dynamic>>{};
+      final classes = <String>{};
 
-    for (final doc in studentsSnap.docs) {
-      final data = doc.data();
-      students[doc.id] = data;
-      if (data['className'] != null) {
-        classes.add(data['className'] as String);
+      for (final doc in studentsSnap.docs) {
+        final data = doc.data();
+        students[doc.id] = data;
+        if (data['className'] != null) {
+          classes.add(data['className'] as String);
+        }
       }
-    }
 
-    // Cargar todos los resultados
-    final resultsSnap = await FirebaseFirestore.instance
-        .collection('results')
-        .where('studentId', whereIn: students.keys.isEmpty ? ['none'] : students.keys.toList())
-        .get();
+      // Cargar resultados en lotes (límite whereIn = 30)
+      final activityData = <String, Map<String, List<bool>>>{};
 
-    final activityData = <String, Map<String, List<bool>>>{};
+      if (students.isNotEmpty) {
+        final resultsDocs =
+        await _loadResultsInBatches(students.keys.toList());
 
-    for (final doc in resultsSnap.docs) {
-      final data = doc.data();
-      final studentId = data['studentId'] as String? ?? '';
-      final activityType = data['activityType'] as String? ?? '';
-      final correct = data['isCorrect'] as bool? ?? false;
+        for (final doc in resultsDocs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final studentId = data['studentId'] as String? ?? '';
+          final activityType = data['activityType'] as String? ?? '';
+          final correct = data['isCorrect'] as bool? ?? false;
 
-      activityData.putIfAbsent(studentId, () => {});
-      activityData[studentId]!.putIfAbsent(activityType, () => []);
-      activityData[studentId]![activityType]!.add(correct);
-    }
+          activityData.putIfAbsent(studentId, () => {});
+          activityData[studentId]!.putIfAbsent(activityType, () => []);
+          activityData[studentId]![activityType]!.add(correct);
+        }
+      }
 
-    if (mounted) {
-      final sortedClasses = classes.toList()..sort();
-      setState(() {
-        _studentData = students;
-        _activityData = activityData;
-        _classes = sortedClasses;
-        _selectedClass = sortedClasses.isNotEmpty ? sortedClasses.first : null;
-        _loading = false;
-      });
+      if (mounted) {
+        final sortedClasses = classes.toList()..sort();
+        setState(() {
+          _studentData = students;
+          _activityData = activityData;
+          _classes = sortedClasses;
+          _selectedClass =
+          sortedClasses.isNotEmpty ? sortedClasses.first : null;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
   List<String> _filteredStudentIds() {
     return _studentData.entries
-        .where((e) => _selectedClass == null || e.value['className'] == _selectedClass)
+        .where((e) =>
+    _selectedClass == null ||
+        e.value['className'] == _selectedClass)
         .map((e) => e.key)
         .toList();
   }
@@ -99,9 +135,52 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('Error al cargar datos',
+                  style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 8),
+              Text(_errorMessage!,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _loading = true;
+                    _errorMessage = null;
+                  });
+                  _loadData();
+                },
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (_studentData.isEmpty) {
-      return const Center(
-        child: Text('No hay alumnos registrados', style: TextStyle(fontSize: 18, color: Colors.grey)),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.school_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            const Text('No hay alumnos registrados',
+                style: TextStyle(fontSize: 18, color: Colors.grey)),
+            const SizedBox(height: 8),
+            Text('Añade alumnos desde la sección de gestión',
+                style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+          ],
+        ),
       );
     }
 
@@ -114,13 +193,17 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
           if (_classes.isNotEmpty)
             Row(
               children: [
-                const Text('Clase: ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text('Clase: ',
+                    style:
+                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 8),
                 DropdownButton<String>(
                   value: _selectedClass,
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('Todas')),
-                    ..._classes.map((c) => DropdownMenuItem(value: c, child: Text(c))),
+                    const DropdownMenuItem(
+                        value: null, child: Text('Todas')),
+                    ..._classes.map(
+                            (c) => DropdownMenuItem(value: c, child: Text(c))),
                   ],
                   onChanged: (v) => setState(() => _selectedClass = v),
                 ),
@@ -149,11 +232,12 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+      style: const TextStyle(
+          fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
     );
   }
 
-  // GRÁFICA 4: Comparativa de alumnos
+  // GRÁFICA: Comparativa de alumnos
   Widget _buildStudentComparisonChart() {
     final studentIds = _filteredStudentIds();
     if (studentIds.isEmpty) return const Center(child: Text('Sin datos'));
@@ -166,7 +250,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
 
       final allResults = activities.values.expand((e) => e).toList();
       final correct = allResults.where((r) => r).length;
-      final percent = allResults.isEmpty ? 0.0 : correct * 100 / allResults.length;
+      final percent =
+      allResults.isEmpty ? 0.0 : correct * 100 / allResults.length;
       results.add(_StudentResult(name: name, percent: percent));
     }
 
@@ -182,7 +267,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               return BarTooltipItem(
                 '${results[group.x.toInt()].name}\n${rod.toY.round()}%',
-                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               );
             },
           ),
@@ -196,7 +282,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
                 final idx = value.toInt();
                 if (idx < 0 || idx >= results.length) return const SizedBox();
                 final name = results[idx].name;
-                final short = name.length > 8 ? '${name.substring(0, 8)}.' : name;
+                final short =
+                name.length > 8 ? '${name.substring(0, 8)}.' : name;
                 return SideTitleWidget(
                   meta: meta,
                   angle: -0.5,
@@ -210,12 +297,15 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
               showTitles: true,
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}%', style: const TextStyle(fontSize: 10));
+                return Text('${value.toInt()}%',
+                    style: const TextStyle(fontSize: 10));
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         barGroups: results.asMap().entries.map((entry) {
@@ -231,7 +321,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
                 toY: entry.value.percent,
                 color: color,
                 width: 20,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(6)),
               ),
             ],
           );
@@ -240,7 +331,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
     );
   }
 
-  // GRÁFICA 5: Dificultad por actividad
+  // GRÁFICA: Dificultad por actividad
   Widget _buildActivityDifficultyChart() {
     final studentIds = _filteredStudentIds();
     final Map<String, List<bool>> aggregated = {};
@@ -253,7 +344,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
       }
     }
 
-    final types = activityNames.keys.where((k) => aggregated.containsKey(k)).toList();
+    final types =
+    activityNames.keys.where((k) => aggregated.containsKey(k)).toList();
     if (types.isEmpty) return const Center(child: Text('Sin datos'));
 
     return BarChart(
@@ -266,7 +358,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
               final type = types[group.x.toInt()];
               return BarTooltipItem(
                 '${activityNames[type]}\n${rod.toY.round()}%',
-                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               );
             },
           ),
@@ -295,18 +388,22 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
               showTitles: true,
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}%', style: const TextStyle(fontSize: 10));
+                return Text('${value.toInt()}%',
+                    style: const TextStyle(fontSize: 10));
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         barGroups: types.asMap().entries.map((entry) {
           final results = aggregated[entry.value]!;
           final correct = results.where((r) => r).length;
-          final percent = results.isEmpty ? 0.0 : correct * 100 / results.length;
+          final percent =
+          results.isEmpty ? 0.0 : correct * 100 / results.length;
           final color = percent >= 70
               ? Colors.green
               : percent >= 50
@@ -320,7 +417,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
                 toY: percent,
                 color: color,
                 width: 22,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(6)),
               ),
             ],
           );

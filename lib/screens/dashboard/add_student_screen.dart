@@ -39,7 +39,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       );
       return;
     }
-    // Validar que todos los campos estén completos
+
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor introduce el nombre del alumno')),
@@ -66,7 +66,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     });
 
     try {
-      // Obtener schoolId del usuario actual
       final user = FirebaseAuth.instance.currentUser;
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
@@ -75,7 +74,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
       final schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
 
-      // Crear el alumno en Firestore
       await FirebaseFirestore.instance.collection('students').add({
         'name': _nameController.text.trim(),
         'className': _selectedClass,
@@ -94,7 +92,6 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         );
         Navigator.of(context).pop();
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +153,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                     child: Text(className),
                   );
                 }).toList(),
-                onChanged: _isLoading ? null : (value) {
+                onChanged: _isLoading
+                    ? null
+                    : (value) {
                   setState(() {
                     _selectedClass = value;
                   });
@@ -185,9 +184,13 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                 itemBuilder: (context, index) {
                   final avatarId = index + 1;
                   final isSelected = _selectedAvatarId == avatarId;
+                  final avatarPath =
+                      'assets/avatars/avatar_${avatarId.toString().padLeft(2, '0')}.png';
 
                   return GestureDetector(
-                    onTap: _isLoading ? null : () {
+                    onTap: _isLoading
+                        ? null
+                        : () {
                       setState(() {
                         _selectedAvatarId = avatarId;
                       });
@@ -195,7 +198,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isSelected ? Colors.blue : Colors.grey.shade300,
+                          color:
+                          isSelected ? Colors.blue : Colors.grey.shade300,
                           width: isSelected ? 3 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -207,7 +211,7 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.asset(
-                                'assets/avatars/avatar_${avatarId.toString().padLeft(2, '0')}.png',
+                                avatarPath,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Icon(
@@ -244,22 +248,28 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
               ),
 
               const SizedBox(height: 32),
-              // Checkbox de consentimiento
+
+              // Checkbox de consentimiento RGPD
               CheckboxListTile(
                 value: _consentChecked,
-                onChanged: _isLoading ? null : (value) {
+                onChanged: _isLoading
+                    ? null
+                    : (value) {
                   setState(() {
                     _consentChecked = value ?? false;
                   });
                 },
                 title: const Text(
-                  'Confirmo que el centro dispone del consentimiento de los padres/tutores legales para el tratamiento de datos de este alumno (Art. 7 LOPDGDD).',
+                  'Confirmo que el centro dispone del consentimiento de los '
+                      'padres/tutores legales para el tratamiento de datos de '
+                      'este alumno (Art. 7 LOPDGDD).',
                   style: TextStyle(fontSize: 13),
                 ),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),
               const SizedBox(height: 16),
+
               // Botón guardar
               SizedBox(
                 width: double.infinity,

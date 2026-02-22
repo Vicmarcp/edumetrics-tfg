@@ -19,6 +19,7 @@ class StudentAnalyticsScreen extends StatefulWidget {
 class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
   List<QueryDocumentSnapshot> _results = [];
   bool _loading = true;
+  String? _errorMessage;
 
   static const Map<String, String> activityNames = {
     'comparison': 'Comparación',
@@ -53,17 +54,26 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
   }
 
   Future<void> _loadResults() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('results')
-        .where('studentId', isEqualTo: widget.studentId)
-        .orderBy('timestamp', descending: false)
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('results')
+          .where('studentId', isEqualTo: widget.studentId)
+          .orderBy('timestamp', descending: false)
+          .get();
 
-    if (mounted) {
-      setState(() {
-        _results = snapshot.docs;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _results = snapshot.docs;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -73,45 +83,97 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
       appBar: AppBar(
         title: Text('Estadísticas: ${widget.studentName}'),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _results.isEmpty
-          ? const Center(
-        child: Text(
-          'Este alumno aún no tiene resultados',
-          style: TextStyle(fontSize: 18, color: Colors.grey),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('Error al cargar resultados',
+                  style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 8),
+              Text(_errorMessage!,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _loading = true;
+                    _errorMessage = null;
+                  });
+                  _loadResults();
+                },
+                child: const Text('Reintentar'),
+              ),
+            ],
+          ),
         ),
-      )
-          : SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      );
+    }
+
+    if (_results.isEmpty) {
+      return Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildSummaryCards(),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Porcentaje de aciertos por actividad'),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 300,
-              child: _buildAccuracyChart(),
+            Icon(Icons.assignment_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            const Text(
+              'Este alumno aún no tiene resultados',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Evolución temporal del rendimiento'),
             const SizedBox(height: 8),
-            SizedBox(
-              height: 300,
-              child: _buildEvolutionChart(),
+            Text(
+              'Los resultados aparecerán tras completar actividades',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Tiempo medio por pregunta (segundos)'),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 300,
-              child: _buildTimeChart(),
-            ),
-            const SizedBox(height: 32),
           ],
         ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSummaryCards(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Porcentaje de aciertos por actividad'),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 300,
+            child: _buildAccuracyChart(),
+          ),
+          const SizedBox(height: 32),
+          _buildSectionTitle('Evolución temporal del rendimiento'),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 300,
+            child: _buildEvolutionChart(),
+          ),
+          const SizedBox(height: 32),
+          _buildSectionTitle('Tiempo medio por pregunta (segundos)'),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 300,
+            child: _buildTimeChart(),
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
@@ -169,7 +231,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               const SizedBox(height: 4),
               Text(
                 label,
-                style: TextStyle(fontSize: 12, color: color.withValues(alpha: 0.8)),
+                style:
+                TextStyle(fontSize: 12, color: color.withValues(alpha: 0.8)),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -200,7 +263,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
       grouped.putIfAbsent(type, () => []).add(correct);
     }
 
-    final types = activityNames.keys.where((k) => grouped.containsKey(k)).toList();
+    final types =
+    activityNames.keys.where((k) => grouped.containsKey(k)).toList();
     if (types.isEmpty) return const Center(child: Text('Sin datos'));
 
     return BarChart(
@@ -213,7 +277,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               final type = types[group.x.toInt()];
               return BarTooltipItem(
                 '${activityNames[type]}\n${rod.toY.round()}%',
-                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               );
             },
           ),
@@ -243,18 +308,22 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               showTitles: true,
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}%', style: const TextStyle(fontSize: 10));
+                return Text('${value.toInt()}%',
+                    style: const TextStyle(fontSize: 10));
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         barGroups: types.asMap().entries.map((entry) {
           final results = grouped[entry.value]!;
           final correct = results.where((r) => r).length;
-          final percent = results.isEmpty ? 0.0 : correct * 100 / results.length;
+          final percent =
+          results.isEmpty ? 0.0 : correct * 100 / results.length;
           final colorIdx = activityNames.keys.toList().indexOf(entry.value);
 
           return BarChartGroupData(
@@ -264,7 +333,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                 toY: percent,
                 color: activityColors[colorIdx % activityColors.length],
                 width: 22,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(6)),
               ),
             ],
           );
@@ -275,16 +345,14 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
 
   // GRÁFICA 2: Línea temporal de evolución
   Widget _buildEvolutionChart() {
-    // Agrupar resultados por sesión (misma actividad + mismo timestamp cercano)
-    // Simplificación: agrupar en bloques de 10 respuestas consecutivas
-    if (_results.length < 10) {
+    if (_results.length < 5) {
       return const Center(
-        child: Text('Se necesitan al menos 10 respuestas para ver la evolución'),
+        child: Text('Se necesitan al menos 5 respuestas para ver la evolución'),
       );
     }
 
     final List<FlSpot> spots = [];
-    const blockSize = 10;
+    final blockSize = _results.length < 10 ? 5 : 10;
     final blocks = _results.length ~/ blockSize;
 
     for (int i = 0; i < blocks; i++) {
@@ -306,7 +374,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               return touchedSpots.map((spot) {
                 return LineTooltipItem(
                   'Sesión ${spot.x.toInt() + 1}: ${spot.y.round()}%',
-                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 );
               }).toList();
             },
@@ -314,11 +383,13 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
         ),
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
-            axisNameWidget: const Text('Sesiones', style: TextStyle(fontSize: 12)),
+            axisNameWidget:
+            const Text('Sesiones', style: TextStyle(fontSize: 12)),
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                return Text('${value.toInt() + 1}', style: const TextStyle(fontSize: 10));
+                return Text('${value.toInt() + 1}',
+                    style: const TextStyle(fontSize: 10));
               },
             ),
           ),
@@ -327,12 +398,15 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               showTitles: true,
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}%', style: const TextStyle(fontSize: 10));
+                return Text('${value.toInt()}%',
+                    style: const TextStyle(fontSize: 10));
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(
           show: true,
@@ -373,7 +447,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
       grouped.putIfAbsent(type, () => []).add(time);
     }
 
-    final types = activityNames.keys.where((k) => grouped.containsKey(k)).toList();
+    final types =
+    activityNames.keys.where((k) => grouped.containsKey(k)).toList();
     if (types.isEmpty) return const Center(child: Text('Sin datos'));
 
     final maxTime = grouped.values
@@ -391,7 +466,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               final type = types[group.x.toInt()];
               return BarTooltipItem(
                 '${activityNames[type]}\n${rod.toY.toStringAsFixed(1)}s',
-                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               );
             },
           ),
@@ -421,17 +497,21 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               showTitles: true,
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}s', style: const TextStyle(fontSize: 10));
+                return Text('${value.toInt()}s',
+                    style: const TextStyle(fontSize: 10));
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
         barGroups: types.asMap().entries.map((entry) {
           final times = grouped[entry.value]!;
-          final avg = times.isEmpty ? 0.0 : times.reduce((a, b) => a + b) / times.length;
+          final avg =
+          times.isEmpty ? 0.0 : times.reduce((a, b) => a + b) / times.length;
           final colorIdx = activityNames.keys.toList().indexOf(entry.value);
 
           return BarChartGroupData(
@@ -439,9 +519,11 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             barRods: [
               BarChartRodData(
                 toY: avg,
-                color: activityColors[colorIdx % activityColors.length].withValues(alpha: 0.7),
+                color: activityColors[colorIdx % activityColors.length]
+                    .withValues(alpha: 0.7),
                 width: 22,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(6)),
               ),
             ],
           );

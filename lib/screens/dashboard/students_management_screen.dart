@@ -1,14 +1,71 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'add_student_screen.dart';
 import 'edit_student_screen.dart';
 
-class StudentsManagementScreen extends StatelessWidget {
+class StudentsManagementScreen extends StatefulWidget {
   const StudentsManagementScreen({super.key});
 
   @override
+  State<StudentsManagementScreen> createState() =>
+      _StudentsManagementScreenState();
+}
+
+class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
+  String? _schoolId;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSchoolId();
+  }
+
+  Future<void> _loadSchoolId() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (mounted) {
+          setState(() {
+            _schoolId = 'default-school';
+            _loading = false;
+          });
+        }
+        return;
+      }
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _schoolId = 'default-school';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Gestionar Alumnos')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestionar Alumnos'),
@@ -16,12 +73,34 @@ class StudentsManagementScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('students')
+            .where('schoolId', isEqualTo: _schoolId)
             .where('isActive', isEqualTo: true)
             .orderBy('name')
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error al cargar los alumnos',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${snapshot.error}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -64,19 +143,28 @@ class StudentsManagementScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final doc = students[index];
               final data = doc.data() as Map<String, dynamic>;
+              final avatarId = data['avatarId'] ?? 1;
+              final avatarPath =
+                  'assets/avatars/avatar_${avatarId.toString().padLeft(2, '0')}.png';
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blue,
-                    child: Text(
-                      data['name']?.substring(0, 1).toUpperCase() ?? '?',
-                      style: const TextStyle(color: Colors.white),
-                    ),
+                    backgroundImage: AssetImage(avatarPath),
+                    onBackgroundImageError: (_, _) {},
+                    child: data['avatarId'] == null
+                        ? Text(
+                      (data['name'] ?? '?').substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                    )
+                        : null,
                   ),
                   title: Text(data['name'] ?? 'Sin nombre'),
-                  subtitle: Text('Clase: ${data['className'] ?? 'No asignada'}'),
+                  subtitle:
+                  Text('Clase: ${data['className'] ?? 'No asignada'}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -99,7 +187,8 @@ class StudentsManagementScreen extends StatelessWidget {
                         icon: const Icon(Icons.delete),
                         color: Colors.red,
                         onPressed: () {
-                          _showDeleteConfirmation(context, doc.id, data['name'] ?? 'este alumno');
+                          _showDeleteConfirmation(
+                              context, doc.id, data['name'] ?? 'este alumno');
                         },
                       ),
                     ],
@@ -123,7 +212,9 @@ class StudentsManagementScreen extends StatelessWidget {
       ),
     );
   }
-  void _showDeleteConfirmation(BuildContext context, String studentId, String studentName) {
+
+  void _showDeleteConfirmation(
+      BuildContext context, String studentId, String studentName) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -134,7 +225,6 @@ class StudentsManagementScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancelar'),
           ),
-          // Dar de baja (soft delete)
           TextButton(
             onPressed: () async {
               try {
@@ -164,11 +254,11 @@ class StudentsManagementScreen extends StatelessWidget {
             style: TextButton.styleFrom(foregroundColor: Colors.orange),
             child: const Text('Dar de baja'),
           ),
-          // Eliminación permanente (RGPD)
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _showPermanentDeleteConfirmation(context, studentId, studentName);
+              _showPermanentDeleteConfirmation(
+                  context, studentId, studentName);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Eliminar permanentemente'),
@@ -177,7 +267,9 @@ class StudentsManagementScreen extends StatelessWidget {
       ),
     );
   }
-  void _showPermanentDeleteConfirmation(BuildContext context, String studentId, String studentName) {
+
+  void _showPermanentDeleteConfirmation(
+      BuildContext context, String studentId, String studentName) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -209,7 +301,9 @@ class StudentsManagementScreen extends StatelessWidget {
 
                 // 2. Eliminar el documento del alumno
                 batch.delete(
-                  FirebaseFirestore.instance.collection('students').doc(studentId),
+                  FirebaseFirestore.instance
+                      .collection('students')
+                      .doc(studentId),
                 );
 
                 await batch.commit();
@@ -218,7 +312,8 @@ class StudentsManagementScreen extends StatelessWidget {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Alumno y todos sus datos eliminados permanentemente'),
+                      content: Text(
+                          'Alumno y todos sus datos eliminados permanentemente'),
                       backgroundColor: Colors.red,
                     ),
                   );
