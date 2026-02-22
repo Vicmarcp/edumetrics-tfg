@@ -37,7 +37,6 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
     _loadData();
   }
 
-  /// Carga resultados en lotes de 30 para respetar el límite de whereIn
   Future<List<QueryDocumentSnapshot>> _loadResultsInBatches(
       List<String> studentIds) async {
     final allResults = <QueryDocumentSnapshot>[];
@@ -51,6 +50,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
 
       final snapshot = await FirebaseFirestore.instance
           .collection('results')
+          .where('schoolId', isEqualTo: widget.schoolId)
           .where('studentId', whereIn: batch)
           .get();
 
@@ -62,7 +62,6 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
 
   Future<void> _loadData() async {
     try {
-      // Cargar alumnos activos del colegio
       final studentsSnap = await FirebaseFirestore.instance
           .collection('students')
           .where('schoolId', isEqualTo: widget.schoolId)
@@ -80,7 +79,6 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
         }
       }
 
-      // Cargar resultados en lotes (límite whereIn = 30)
       final activityData = <String, Map<String, List<bool>>>{};
 
       if (students.isNotEmpty) {
@@ -189,7 +187,6 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Filtro por clase
           if (_classes.isNotEmpty)
             Row(
               children: [
@@ -212,17 +209,11 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
           const SizedBox(height: 24),
           _buildSectionTitle('Media de aciertos por alumno'),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 350,
-            child: _buildStudentComparisonChart(),
-          ),
+          SizedBox(height: 350, child: _buildStudentComparisonChart()),
           const SizedBox(height: 32),
           _buildSectionTitle('Dificultad por actividad (media de la clase)'),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 300,
-            child: _buildActivityDifficultyChart(),
-          ),
+          SizedBox(height: 300, child: _buildActivityDifficultyChart()),
           const SizedBox(height: 32),
         ],
       ),
@@ -237,7 +228,6 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
     );
   }
 
-  // GRÁFICA: Comparativa de alumnos
   Widget _buildStudentComparisonChart() {
     final studentIds = _filteredStudentIds();
     if (studentIds.isEmpty) return const Center(child: Text('Sin datos'));
@@ -331,7 +321,6 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
     );
   }
 
-  // GRÁFICA: Dificultad por actividad
   Widget _buildActivityDifficultyChart() {
     final studentIds = _filteredStudentIds();
     final Map<String, List<bool>> aggregated = {};

@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 class StudentAnalyticsScreen extends StatefulWidget {
   final String studentId;
   final String studentName;
+  final String schoolId;
 
   const StudentAnalyticsScreen({
     super.key,
     required this.studentId,
     required this.studentName,
+    required this.schoolId,
   });
 
   @override
@@ -57,6 +59,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('results')
+          .where('schoolId', isEqualTo: widget.schoolId)
           .where('studentId', isEqualTo: widget.studentId)
           .orderBy('timestamp', descending: false)
           .get();
@@ -154,24 +157,15 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
           const SizedBox(height: 24),
           _buildSectionTitle('Porcentaje de aciertos por actividad'),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 300,
-            child: _buildAccuracyChart(),
-          ),
+          SizedBox(height: 300, child: _buildAccuracyChart()),
           const SizedBox(height: 32),
           _buildSectionTitle('Evolución temporal del rendimiento'),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 300,
-            child: _buildEvolutionChart(),
-          ),
+          SizedBox(height: 300, child: _buildEvolutionChart()),
           const SizedBox(height: 32),
           _buildSectionTitle('Tiempo medio por pregunta (segundos)'),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 300,
-            child: _buildTimeChart(),
-          ),
+          SizedBox(height: 300, child: _buildTimeChart()),
           const SizedBox(height: 32),
         ],
       ),
@@ -253,7 +247,6 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     );
   }
 
-  // GRÁFICA 1: Barras de % aciertos por actividad
   Widget _buildAccuracyChart() {
     final Map<String, List<bool>> grouped = {};
     for (final result in _results) {
@@ -343,7 +336,6 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     );
   }
 
-  // GRÁFICA 2: Línea temporal de evolución
   Widget _buildEvolutionChart() {
     if (_results.length < 5) {
       return const Center(
@@ -437,7 +429,6 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     );
   }
 
-  // GRÁFICA 3: Tiempo medio por actividad
   Widget _buildTimeChart() {
     final Map<String, List<int>> grouped = {};
     for (final result in _results) {

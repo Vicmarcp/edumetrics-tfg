@@ -110,7 +110,6 @@ class _StudentListTab extends StatelessWidget {
           .orderBy('name')
           .snapshots(),
       builder: (context, snapshot) {
-        // Manejo de errores (índice compuesto, permisos, etc.)
         if (snapshot.hasError) {
           return Center(
             child: Padding(
@@ -199,6 +198,7 @@ class _StudentListTab extends StatelessWidget {
                       builder: (_) => StudentAnalyticsScreen(
                         studentId: student.id,
                         studentName: data['name'] ?? 'Sin nombre',
+                        schoolId: schoolId,
                       ),
                     ),
                   );
