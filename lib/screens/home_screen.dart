@@ -5,6 +5,7 @@ import '../core/app_mode.dart';
 import '../screens/pizarra/student_selector_screen.dart';
 import 'dashboard/analytics_screen.dart';
 import 'dashboard/students_management_screen.dart';
+import 'login_screen.dart';
 import 'privacy_policy_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -22,7 +23,6 @@ class HomeScreen extends StatelessWidget {
             ? 'EduMetrics - Pizarra'
             : 'EduMetrics - Panel de Control'),
         actions: [
-          // Indicador de modo
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: Chip(
@@ -36,12 +36,10 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          // NUEVO: Botón para cambiar de modo
           IconButton(
             icon: const Icon(Icons.swap_horiz),
             tooltip: 'Cambiar modo',
             onPressed: () {
-              // Navegar al otro modo
               final newMode = mode == AppMode.pizarra
                   ? AppMode.desktop
                   : AppMode.pizarra;
@@ -55,10 +53,14 @@ class HomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Cerrar sesión',
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               if (context.mounted) {
-                Navigator.of(context).pushReplacementNamed('/');
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                );
               }
             },
           ),
@@ -70,7 +72,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Vista para modo Pizarra
   Widget _buildPizarraHome(BuildContext context, User? user) {
     return Center(
       child: Column(
@@ -90,7 +91,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 64),
-          // Botones grandes para pizarra
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).push(
@@ -129,7 +129,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // Vista para modo Desktop
   Widget _buildDesktopHome(BuildContext context, User? user) {
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -152,9 +151,12 @@ class HomeScreen extends StatelessWidget {
                   title: 'Gestionar Alumnos',
                   description: 'Crear, editar y organizar alumnos',
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => const StudentsManagementScreen(),
-                    ));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const StudentsManagementScreen(),
+                      ),
+                    );
                   },
                 ),
                 _MenuCard(
@@ -162,9 +164,12 @@ class HomeScreen extends StatelessWidget {
                   title: 'Ver Gráficas',
                   description: 'Análisis y estadísticas',
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => const AnalyticsScreen(),
-                    ));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AnalyticsScreen(),
+                      ),
+                    );
                   },
                 ),
                 _MenuCard(
@@ -173,7 +178,8 @@ class HomeScreen extends StatelessWidget {
                   description: 'Ajustes del sistema',
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Próximamente: Configuración')),
+                      const SnackBar(
+                          content: Text('Próximamente: Configuración')),
                     );
                   },
                 ),
@@ -201,7 +207,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// Widget reutilizable para las tarjetas del menú
 class _MenuCard extends StatelessWidget {
   final IconData icon;
   final String title;

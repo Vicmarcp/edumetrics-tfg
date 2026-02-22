@@ -18,11 +18,11 @@ class ActivitySummaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final averageTime = timesInSeconds.isEmpty
         ? 0
-        : (timesInSeconds.reduce((a, b) => a + b) / timesInSeconds.length).round();
+        : (timesInSeconds.reduce((a, b) => a + b) / timesInSeconds.length)
+        .round();
 
     final percentage = (correctAnswers / totalQuestions * 100).round();
 
-    // Emoji según rendimiento
     String emoji;
     String message;
     MaterialColor color;
@@ -56,79 +56,74 @@ class ActivitySummaryScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                emoji,
-                style: const TextStyle(fontSize: 120),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                message,
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+                  emoji,
+                  style: const TextStyle(fontSize: 120),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                studentName,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 48),
-
-              // Tarjetas de estadísticas
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _StatCard(
-                    icon: Icons.check_circle,
-                    label: 'Aciertos',
-                    value: '$correctAnswers/$totalQuestions',
-                    color: Colors.green,
-                  ),
-                  _StatCard(
-                    icon: Icons.timer,
-                    label: 'Tiempo promedio',
-                    value: '${averageTime}s',
-                    color: Colors.blue,
-                  ),
-                  _StatCard(
-                    icon: Icons.percent,
-                    label: 'Porcentaje',
-                    value: '$percentage%',
-                    color: Colors.purple,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 64),
-
-              // Botón grande para volver
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: color,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(300, 80),
-                  textStyle: const TextStyle(
-                    fontSize: 28,
+                const SizedBox(height: 24),
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 48,
                     fontWeight: FontWeight.bold,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    color: color,
                   ),
                 ),
-                child: const Text('Volver al Inicio'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  studentName,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 48),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _StatCard(
+                      icon: Icons.check_circle,
+                      label: 'Aciertos',
+                      value: '$correctAnswers/$totalQuestions',
+                      color: Colors.green,
+                    ),
+                    _StatCard(
+                      icon: Icons.timer,
+                      label: 'Tiempo promedio',
+                      value: '${averageTime}s',
+                      color: Colors.blue,
+                    ),
+                    _StatCard(
+                      icon: Icons.percent,
+                      label: 'Porcentaje',
+                      value: '$percentage%',
+                      color: Colors.purple,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 64),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(300, 80),
+                    textStyle: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text('Volver al Inicio'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      )
     );
   }
 }

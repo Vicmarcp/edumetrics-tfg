@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'addition_activity_screen.dart';
@@ -12,11 +13,67 @@ import 'subtraction_activity_screen.dart';
 import 'syllable_complete_activity_screen.dart';
 import 'syllable_count_activity_screen.dart';
 
-class StudentSelectorScreen extends StatelessWidget {
+class StudentSelectorScreen extends StatefulWidget {
   const StudentSelectorScreen({super.key});
 
   @override
+  State<StudentSelectorScreen> createState() => _StudentSelectorScreenState();
+}
+
+class _StudentSelectorScreenState extends State<StudentSelectorScreen> {
+  String? _schoolId;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSchoolId();
+  }
+
+  Future<void> _loadSchoolId() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (mounted) {
+          setState(() {
+            _schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
+            _loading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _schoolId = 'default-school';
+            _loading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _schoolId = 'default-school';
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Selecciona un alumno'),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Selecciona un alumno'),
@@ -25,12 +82,35 @@ class StudentSelectorScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('students')
+            .where('schoolId', isEqualTo: _schoolId)
             .where('isActive', isEqualTo: true)
             .orderBy('name')
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error al cargar alumnos',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${snapshot.error}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -50,12 +130,16 @@ class StudentSelectorScreen extends StatelessWidget {
                     'No hay alumnos registrados',
                     style: TextStyle(fontSize: 24, color: Colors.grey[600]),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Añade alumnos desde el modo escritorio',
+                    style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+                  ),
                 ],
               ),
             );
           }
 
-          // Grid de alumnos con avatares grandes
           return GridView.builder(
             padding: const EdgeInsets.all(32),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -70,6 +154,8 @@ class StudentSelectorScreen extends StatelessWidget {
               final data = doc.data() as Map<String, dynamic>;
               final studentName = data['name'] ?? 'Sin nombre';
               final avatarId = data['avatarId'] ?? 1;
+              final avatarPath =
+                  'assets/avatars/avatar_${avatarId.toString().padLeft(2, '0')}.png';
 
               return Card(
                 elevation: 4,
@@ -78,7 +164,6 @@ class StudentSelectorScreen extends StatelessWidget {
                 ),
                 child: InkWell(
                   onTap: () {
-                    // Mostrar diálogo para elegir actividad
                     _showActivitySelector(context, doc.id, studentName);
                   },
                   borderRadius: BorderRadius.circular(20),
@@ -87,10 +172,9 @@ class StudentSelectorScreen extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Avatar grande
                         Expanded(
                           child: Image.asset(
-                            'assets/avatars/avatar_${avatarId.toString().padLeft(2, '0')}.png',
+                            avatarPath,
                             fit: BoxFit.contain,
                             errorBuilder: (context, error, stackTrace) {
                               return Icon(
@@ -102,7 +186,6 @@ class StudentSelectorScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        // Nombre del alumno
                         Text(
                           studentName,
                           style: const TextStyle(
@@ -124,204 +207,204 @@ class StudentSelectorScreen extends StatelessWidget {
       ),
     );
   }
-  void _showActivitySelector(BuildContext context, String studentId, String studentName) {
+
+  void _showActivitySelector(
+      BuildContext context, String studentId, String studentName) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Selecciona una actividad'),
         content: SingleChildScrollView(
           child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _ActivityButton(
-              icon: Icons.compare_arrows,
-              label: 'Comparación Numérica',
-              color: Colors.blue,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ComparisonActivityScreen(
-                      studentId: studentId,
-                      studentName: studentName,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ActivityButton(
+                icon: Icons.compare_arrows,
+                label: 'Comparación Numérica',
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ComparisonActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.format_list_numbered,
-              label: 'Secuencia Numérica',
-              color: Colors.green,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SequenceActivityScreen(
-                      studentId: studentId,
-                      studentName: studentName,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.format_list_numbered,
+                label: 'Secuencia Numérica',
+                color: Colors.green,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SequenceActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.grid_view,
-              label: 'Valor Posicional',
-              color: Colors.orange,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PlaceValueActivityScreen(
-                      studentId: studentId,
-                      studentName: studentName,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.grid_view,
+                label: 'Valor Posicional',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PlaceValueActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.add_circle_outline,
-              label: 'Sumas Básicas',
-              color: Colors.purple,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AdditionActivityScreen(
-                      studentId: studentId,
-                      studentName: studentName,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.add_circle_outline,
+                label: 'Sumas Básicas',
+                color: Colors.purple,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AdditionActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.remove_circle_outline,
-              label: 'Restas Básicas',
-              color: Colors.red,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SubtractionActivityScreen(
-                      studentId: studentId,
-                      studentName: studentName,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.remove_circle_outline,
+                label: 'Restas Básicas',
+                color: Colors.red,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SubtractionActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.text_fields,
-              label: 'Vocales Perdidas',
-              color: Colors.orange,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => MissingVowelsActivityScreen(
-                      studentId: studentId,
-                      studentName: studentName,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.text_fields,
+                label: 'Vocales Perdidas',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MissingVowelsActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.music_note,
-              label: 'Contar Sílabas',
-              color: Colors.indigo,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SyllableCountActivityScreen(
-                      studentId: studentId,
-                      studentName: studentName,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.music_note,
+                label: 'Contar Sílabas',
+                color: Colors.indigo,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SyllableCountActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.reorder,
-              label: 'Ordenar Frases',
-              color: Colors.teal,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        SentenceOrderActivityScreen(
-                          studentId: studentId,
-                          studentName: studentName,
-                        ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.text_increase,
-              label: 'Mayúsculas',
-              color: Colors.deepPurple,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        CapitalizationActivityScreen(
-                          studentId: studentId,
-                          studentName: studentName,
-                        ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _ActivityButton(
-              icon: Icons.extension,
-              label: 'Completar Sílabas',
-              color: Colors.amber,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        SyllableCompleteActivityScreen(
-                          studentId: studentId,
-                          studentName: studentName,
-                        ),
-                  ),
-                );
-              },
-            ),
-          ],
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.reorder,
+                label: 'Ordenar Frases',
+                color: Colors.teal,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SentenceOrderActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.text_increase,
+                label: 'Mayúsculas',
+                color: Colors.deepPurple,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CapitalizationActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _ActivityButton(
+                icon: Icons.extension,
+                label: 'Completar Sílabas',
+                color: Colors.amber,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SyllableCompleteActivityScreen(
+                        studentId: studentId,
+                        studentName: studentName,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
 }
+
 class _ActivityButton extends StatelessWidget {
   final IconData icon;
   final String label;
