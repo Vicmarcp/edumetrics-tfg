@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../core/app_mode.dart';
 import '../screens/pizarra/student_selector_screen.dart';
+import 'dashboard/analytics_screen.dart';
 import 'dashboard/students_management_screen.dart';
 import 'privacy_policy_screen.dart';
 
@@ -151,11 +152,9 @@ class HomeScreen extends StatelessWidget {
                   title: 'Gestionar Alumnos',
                   description: 'Crear, editar y organizar alumnos',
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const StudentsManagementScreen(),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const StudentsManagementScreen(),
+                    ));
                   },
                 ),
                 _MenuCard(
@@ -163,9 +162,9 @@ class HomeScreen extends StatelessWidget {
                   title: 'Ver Gráficas',
                   description: 'Análisis y estadísticas',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Próximamente: Gráficas')),
-                    );
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => const AnalyticsScreen(),
+                    ));
                   },
                 ),
                 _MenuCard(
