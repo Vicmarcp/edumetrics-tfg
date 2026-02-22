@@ -17,9 +17,10 @@ abstract class BaseActivityScreen extends StatefulWidget {
   });
 }
 
-abstract class BaseActivityState<T extends BaseActivityScreen> extends State<T> {
+abstract class BaseActivityState<T extends BaseActivityScreen>
+    extends State<T> {
   int currentQuestion = 0;
-  int get totalQuestions => 10; // Puede sobrescribirse
+  int get totalQuestions => 10;
 
   late List<Map<String, dynamic>> questions;
   DateTime? questionStartTime;
@@ -30,11 +31,48 @@ abstract class BaseActivityState<T extends BaseActivityScreen> extends State<T> 
   int correctCount = 0;
   final List<int> times = [];
 
+  // Cache de datos del profesor y alumno para no consultar en cada respuesta
+  String? _cachedSchoolId;
+  String? _cachedTeacherId;
+  String? _cachedClassName;
+
   @override
   void initState() {
     super.initState();
+    _loadCachedData();
     questions = generateQuestions();
     startQuestion();
+  }
+
+  /// Carga schoolId, teacherId y className UNA sola vez al inicio
+  Future<void> _loadCachedData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      _cachedTeacherId = user?.uid ?? '';
+
+      // Obtener schoolId del profesor
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        _cachedSchoolId = userDoc.data()?['schoolId'] ?? 'default-school';
+      } else {
+        _cachedSchoolId = 'default-school';
+      }
+
+      // Obtener className del alumno
+      final studentDoc = await FirebaseFirestore.instance
+          .collection('students')
+          .doc(widget.studentId)
+          .get();
+      _cachedClassName = studentDoc.data()?['className'] ?? '';
+    } catch (e) {
+      debugPrint('Error loading cached data: $e');
+      _cachedSchoolId ??= 'default-school';
+      _cachedTeacherId ??= '';
+      _cachedClassName ??= '';
+    }
   }
 
   // MÉTODOS ABSTRACTOS - Cada actividad DEBE implementarlos
@@ -53,7 +91,8 @@ abstract class BaseActivityState<T extends BaseActivityScreen> extends State<T> 
   Future<void> handleAnswer(dynamic userAnswer) async {
     if (showFeedback) return;
 
-    final timeSeconds = DateTime.now().difference(questionStartTime!).inSeconds;
+    final timeSeconds =
+        DateTime.now().difference(questionStartTime!).inSeconds;
     final question = questions[currentQuestion];
     final correct = validateAnswer(question, userAnswer);
 
@@ -91,20 +130,12 @@ abstract class BaseActivityState<T extends BaseActivityScreen> extends State<T> 
       int timeSeconds,
       ) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user?.uid)
-          .get();
-
-      final schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
-
       await FirebaseFirestore.instance.collection('results').add({
         'studentId': widget.studentId,
         'studentName': widget.studentName,
-        'className': '',
-        'schoolId': schoolId,
-        'teacherId': user?.uid ?? '',
+        'className': _cachedClassName ?? '',
+        'schoolId': _cachedSchoolId ?? 'default-school',
+        'teacherId': _cachedTeacherId ?? '',
         'activityType': widget.activityType,
         'variant': 1,
         'timeSeconds': timeSeconds,
@@ -114,7 +145,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen> extends State<T> 
           'question': question.toString(),
           'correctAnswer': question['correctAnswer'],
           'userAnswer': userAnswer.toString(),
-          ...question, // Incluye todos los datos de la pregunta
+          ...question,
         },
       });
     } catch (e) {
