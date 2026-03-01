@@ -1,0 +1,741 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+import '../main.dart';
+import 'login_screen.dart';
+import 'privacy_policy_screen.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final _auth = FirebaseAuth.instance;
+  Map<String, dynamic>? _userData;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (mounted) {
+          setState(() {
+            _userData = doc.data();
+            _loading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = _auth.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Configuración')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // ── Información de la cuenta ──
+          _SectionHeader(title: 'Cuenta', icon: Icons.person),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  _InfoRow(
+                    icon: Icons.email,
+                    label: 'Correo electrónico',
+                    value: user?.email ?? 'No disponible',
+                  ),
+                  const Divider(height: 24),
+                  _InfoRow(
+                    icon: Icons.school,
+                    label: 'Centro escolar',
+                    value: _userData?['schoolId'] ?? 'No asignado',
+                  ),
+                  const Divider(height: 24),
+                  _InfoRow(
+                    icon: Icons.badge,
+                    label: 'Nombre',
+                    value: _userData?['name'] ?? user?.displayName ?? 'No definido',
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── Apariencia ──
+          _SectionHeader(title: 'Apariencia', icon: Icons.palette),
+          Card(
+            child: SwitchListTile(
+              secondary: Icon(
+                isDark ? Icons.dark_mode : Icons.light_mode,
+                color: isDark ? Colors.amber : Colors.blueGrey,
+              ),
+              title: const Text('Modo oscuro'),
+              subtitle: Text(isDark ? 'Activado' : 'Desactivado'),
+              value: isDark,
+              onChanged: (value) {
+                themeNotifier.value =
+                value ? ThemeMode.dark : ThemeMode.light;
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── Seguridad ──
+          _SectionHeader(title: 'Seguridad', icon: Icons.lock),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.password),
+                  title: const Text('Cambiar contraseña'),
+                  subtitle: const Text(
+                      'Actualiza tu contraseña actual'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showChangePasswordDialog(context),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.mail_outline),
+                  title: const Text('Recuperar contraseña'),
+                  subtitle: const Text(
+                      'Enviar email de restablecimiento'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _sendPasswordResetEmail(context),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── Privacidad y GDPR ──
+          _SectionHeader(
+              title: 'Privacidad y datos', icon: Icons.privacy_tip),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.description),
+                  title: const Text('Política de Privacidad'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.download,
+                      color: Colors.blue),
+                  title: const Text('Solicitar mis datos'),
+                  subtitle: const Text(
+                      'Descargar información personal (RGPD)'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _requestDataExport(context),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.delete_forever,
+                      color: Colors.red),
+                  title: const Text(
+                    'Eliminar mi cuenta y datos',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  subtitle: const Text(
+                      'Acción irreversible — elimina todo'),
+                  trailing:
+                  const Icon(Icons.chevron_right, color: Colors.red),
+                  onTap: () => _showDeleteAccountDialog(context),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── Sesión ──
+          _SectionHeader(title: 'Sesión', icon: Icons.exit_to_app),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text(
+                'Cerrar sesión',
+                style: TextStyle(
+                    color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+              onTap: () => _logout(context),
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // ── Versión ──
+          Center(
+            child: Text(
+              'EduMetrics v1.0.0 — TFG 2025/2026',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  // ─── Cambiar contraseña ───
+  void _showChangePasswordDialog(BuildContext context) {
+    final currentController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Cambiar contraseña'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: currentController,
+                  obscureText: obscureCurrent,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña actual',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureCurrent
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () => setDialogState(
+                              () => obscureCurrent = !obscureCurrent),
+                    ),
+                  ),
+                  validator: (v) =>
+                  (v == null || v.isEmpty) ? 'Introduce tu contraseña actual' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: newController,
+                  obscureText: obscureNew,
+                  decoration: InputDecoration(
+                    labelText: 'Nueva contraseña',
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureNew
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () =>
+                          setDialogState(() => obscureNew = !obscureNew),
+                    ),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Introduce la nueva contraseña';
+                    if (v.length < 6) return 'Mínimo 6 caracteres';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: confirmController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirmar nueva contraseña',
+                    prefixIcon: Icon(Icons.lock_clock),
+                  ),
+                  validator: (v) {
+                    if (v != newController.text) {
+                      return 'Las contraseñas no coinciden';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+
+                try {
+                  final user = _auth.currentUser!;
+                  final credential = EmailAuthProvider.credential(
+                    email: user.email!,
+                    password: currentController.text,
+                  );
+
+                  // Re-autenticar antes de cambiar
+                  await user.reauthenticateWithCredential(credential);
+                  await user.updatePassword(newController.text);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Contraseña actualizada correctamente'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } on FirebaseAuthException catch (e) {
+                  String msg = 'Error al cambiar la contraseña';
+                  if (e.code == 'wrong-password') {
+                    msg = 'La contraseña actual es incorrecta';
+                  } else if (e.code == 'weak-password') {
+                    msg = 'La nueva contraseña es demasiado débil';
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(msg), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              child: const Text('Cambiar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Enviar email de recuperación ───
+  Future<void> _sendPasswordResetEmail(BuildContext context) async {
+    final email = _auth.currentUser?.email;
+    if (email == null) return;
+
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Email de recuperación enviado a $email'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al enviar email: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ─── Solicitar exportación de datos (RGPD) ───
+  Future<void> _requestDataExport(BuildContext context) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // Recopilar datos del usuario
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
+
+      // Alumnos del profesor
+      final studentsSnap = await FirebaseFirestore.instance
+          .collection('students')
+          .where('schoolId', isEqualTo: schoolId)
+          .get();
+
+      final studentIds = studentsSnap.docs.map((d) => d.id).toList();
+
+      // Resultados
+      int totalResults = 0;
+      if (studentIds.isNotEmpty) {
+        const batchSize = 30;
+        for (var i = 0; i < studentIds.length; i += batchSize) {
+          final batch = studentIds.sublist(
+            i,
+            i + batchSize > studentIds.length
+                ? studentIds.length
+                : i + batchSize,
+          );
+          final resultsSnap = await FirebaseFirestore.instance
+              .collection('results')
+              .where('schoolId', isEqualTo: schoolId)
+              .where('studentId', whereIn: batch)
+              .get();
+          totalResults += resultsSnap.size;
+        }
+      }
+
+      if (context.mounted) {
+        Navigator.pop(context); // Cerrar loading
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Tus datos en EduMetrics'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Resumen de datos almacenados:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  _DataItem('Email', user.email ?? '-'),
+                  _DataItem('Nombre',
+                      userDoc.data()?['name'] ?? 'No definido'),
+                  _DataItem('Centro escolar', schoolId),
+                  _DataItem(
+                      'Fecha de registro',
+                      user.metadata.creationTime
+                          ?.toLocal()
+                          .toString()
+                          .substring(0, 10) ??
+                          '-'),
+                  _DataItem('Alumnos asociados',
+                      '${studentsSnap.size}'),
+                  _DataItem(
+                      'Resultados registrados', '$totalResults'),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Conforme al RGPD, estos son los datos personales '
+                        'que EduMetrics almacena vinculados a tu cuenta.',
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al obtener datos: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ─── Eliminar cuenta y datos (RGPD) ───
+  void _showDeleteAccountDialog(BuildContext context) {
+    final passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red, size: 28),
+            SizedBox(width: 8),
+            Text('Eliminar cuenta'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Esta acción es IRREVERSIBLE. Se eliminarán:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text('• Tu cuenta de usuario'),
+            const Text('• Todos los alumnos asociados'),
+            const Text('• Todos los resultados de actividades'),
+            const SizedBox(height: 16),
+            const Text(
+              'Introduce tu contraseña para confirmar:',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Contraseña',
+                prefixIcon: Icon(Icons.lock),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              if (passwordController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Introduce tu contraseña')),
+                );
+                return;
+              }
+
+              try {
+                final user = _auth.currentUser!;
+                final credential = EmailAuthProvider.credential(
+                  email: user.email!,
+                  password: passwordController.text,
+                );
+
+                // Re-autenticar
+                await user.reauthenticateWithCredential(credential);
+
+                final schoolId =
+                    _userData?['schoolId'] ?? 'default-school';
+
+                // 1. Borrar resultados
+                final studentsSnap = await FirebaseFirestore.instance
+                    .collection('students')
+                    .where('schoolId', isEqualTo: schoolId)
+                    .get();
+
+                final batch = FirebaseFirestore.instance.batch();
+
+                for (final student in studentsSnap.docs) {
+                  final resultsSnap = await FirebaseFirestore.instance
+                      .collection('results')
+                      .where('studentId', isEqualTo: student.id)
+                      .get();
+                  for (final result in resultsSnap.docs) {
+                    batch.delete(result.reference);
+                  }
+                  // 2. Borrar alumno
+                  batch.delete(student.reference);
+                }
+
+                // 3. Borrar documento de usuario
+                batch.delete(FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid));
+
+                await batch.commit();
+
+                // 4. Borrar cuenta de Auth
+                await user.delete();
+
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (_) => const LoginScreen()),
+                        (route) => false,
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'Cuenta y datos eliminados correctamente'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } on FirebaseAuthException catch (e) {
+                String msg = 'Error al eliminar la cuenta';
+                if (e.code == 'wrong-password') {
+                  msg = 'Contraseña incorrecta';
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(msg),
+                        backgroundColor: Colors.red),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Eliminar permanentemente'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Cerrar sesión ───
+  Future<void> _logout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content:
+        const Text('¿Estás seguro de que quieres cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _auth.signOut();
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+        );
+      }
+    }
+  }
+}
+
+// ─── Widgets auxiliares ───
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  const _SectionHeader({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey[600]),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+            Text(value,
+                style:
+                const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DataItem extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DataItem(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 160,
+            child: Text('$label:',
+                style: const TextStyle(fontWeight: FontWeight.w500)),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+}

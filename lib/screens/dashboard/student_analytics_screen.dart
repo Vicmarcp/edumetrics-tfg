@@ -153,26 +153,27 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSummaryCards(),
+          _buildSummaryCards(context),
           const SizedBox(height: 24),
-          _buildSectionTitle('Porcentaje de aciertos por actividad'),
+          _buildSectionTitle(context, 'Porcentaje de aciertos por actividad'),
           const SizedBox(height: 8),
-          SizedBox(height: 300, child: _buildAccuracyChart()),
+          SizedBox(height: 300, child: _buildAccuracyChart(context)),
           const SizedBox(height: 32),
-          _buildSectionTitle('Evolución temporal del rendimiento'),
+          _buildSectionTitle(context, 'Evolución temporal del rendimiento'),
           const SizedBox(height: 8),
-          SizedBox(height: 300, child: _buildEvolutionChart()),
+          SizedBox(height: 300, child: _buildEvolutionChart(context)),
           const SizedBox(height: 32),
-          _buildSectionTitle('Tiempo medio por pregunta (segundos)'),
+          _buildSectionTitle(
+              context, 'Tiempo medio por pregunta (segundos)'),
           const SizedBox(height: 8),
-          SizedBox(height: 300, child: _buildTimeChart()),
+          SizedBox(height: 300, child: _buildTimeChart(context)),
           const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryCards() {
+  Widget _buildSummaryCards(BuildContext context) {
     final totalCorrect = _results.where((r) {
       final data = r.data() as Map<String, dynamic>;
       return data['isCorrect'] == true;
@@ -195,21 +196,23 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
 
     return Row(
       children: [
-        _summaryCard('Total respuestas', '${_results.length}', Colors.blue),
+        _summaryCard(context, 'Total respuestas', '${_results.length}',
+            Colors.blue),
         const SizedBox(width: 12),
-        _summaryCard('% Aciertos', '$totalPercent%', Colors.green),
+        _summaryCard(context, '% Aciertos', '$totalPercent%', Colors.green),
         const SizedBox(width: 12),
-        _summaryCard('Tiempo medio', '${avgTime}s', Colors.orange),
+        _summaryCard(context, 'Tiempo medio', '${avgTime}s', Colors.orange),
         const SizedBox(width: 12),
-        _summaryCard('Actividades', '$activities', Colors.purple),
+        _summaryCard(context, 'Actividades', '$activities', Colors.purple),
       ],
     );
   }
 
-  Widget _summaryCard(String label, String value, Color color) {
+  Widget _summaryCard(
+      BuildContext context, String label, String value, Color color) {
     return Expanded(
       child: Card(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.15),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -225,8 +228,12 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               const SizedBox(height: 4),
               Text(
                 label,
-                style:
-                TextStyle(fontSize: 12, color: color.withValues(alpha: 0.8)),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.7)),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -236,18 +243,21 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: Colors.black87,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
 
-  Widget _buildAccuracyChart() {
+  Widget _buildAccuracyChart(BuildContext context) {
+    final labelColor = Theme.of(context).colorScheme.onSurface;
+    final gridColor = Theme.of(context).dividerColor;
+
     final Map<String, List<bool>> grouped = {};
     for (final result in _results) {
       final data = result.data() as Map<String, dynamic>;
@@ -290,7 +300,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                   angle: -0.5,
                   child: Text(
                     activityNames[types[idx]] ?? types[idx],
-                    style: const TextStyle(fontSize: 10),
+                    style: TextStyle(fontSize: 11, color: labelColor),
                   ),
                 );
               },
@@ -302,7 +312,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Text('${value.toInt()}%',
-                    style: const TextStyle(fontSize: 10));
+                    style: TextStyle(fontSize: 10, color: labelColor));
               },
             ),
           ),
@@ -310,6 +320,12 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
           const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
           const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: gridColor, strokeWidth: 0.5),
         ),
         borderData: FlBorderData(show: false),
         barGroups: types.asMap().entries.map((entry) {
@@ -336,7 +352,10 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     );
   }
 
-  Widget _buildEvolutionChart() {
+  Widget _buildEvolutionChart(BuildContext context) {
+    final labelColor = Theme.of(context).colorScheme.onSurface;
+    final gridColor = Theme.of(context).dividerColor;
+
     if (_results.length < 5) {
       return const Center(
         child: Text('Se necesitan al menos 5 respuestas para ver la evolución'),
@@ -376,12 +395,12 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
         titlesData: FlTitlesData(
           bottomTitles: AxisTitles(
             axisNameWidget:
-            const Text('Sesiones', style: TextStyle(fontSize: 12)),
+            Text('Sesiones', style: TextStyle(fontSize: 12, color: labelColor)),
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
                 return Text('${value.toInt() + 1}',
-                    style: const TextStyle(fontSize: 10));
+                    style: TextStyle(fontSize: 10, color: labelColor));
               },
             ),
           ),
@@ -391,7 +410,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Text('${value.toInt()}%',
-                    style: const TextStyle(fontSize: 10));
+                    style: TextStyle(fontSize: 10, color: labelColor));
               },
             ),
           ),
@@ -402,14 +421,14 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: gridColor),
         ),
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
           horizontalInterval: 25,
           getDrawingHorizontalLine: (value) {
-            return FlLine(color: Colors.grey.shade200, strokeWidth: 1);
+            return FlLine(color: gridColor, strokeWidth: 0.5);
           },
         ),
         lineBarsData: [
@@ -421,7 +440,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             dotData: const FlDotData(show: true),
             belowBarData: BarAreaData(
               show: true,
-              color: Colors.blue.withValues(alpha: 0.1),
+              color: Colors.blue.withValues(alpha: 0.15),
             ),
           ),
         ],
@@ -429,7 +448,10 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     );
   }
 
-  Widget _buildTimeChart() {
+  Widget _buildTimeChart(BuildContext context) {
+    final labelColor = Theme.of(context).colorScheme.onSurface;
+    final gridColor = Theme.of(context).dividerColor;
+
     final Map<String, List<int>> grouped = {};
     for (final result in _results) {
       final data = result.data() as Map<String, dynamic>;
@@ -477,7 +499,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                   angle: -0.5,
                   child: Text(
                     activityNames[types[idx]] ?? types[idx],
-                    style: const TextStyle(fontSize: 10),
+                    style: TextStyle(fontSize: 11, color: labelColor),
                   ),
                 );
               },
@@ -489,7 +511,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Text('${value.toInt()}s',
-                    style: const TextStyle(fontSize: 10));
+                    style: TextStyle(fontSize: 10, color: labelColor));
               },
             ),
           ),
@@ -498,11 +520,18 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
           rightTitles:
           const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: gridColor, strokeWidth: 0.5),
+        ),
         borderData: FlBorderData(show: false),
         barGroups: types.asMap().entries.map((entry) {
           final times = grouped[entry.value]!;
-          final avg =
-          times.isEmpty ? 0.0 : times.reduce((a, b) => a + b) / times.length;
+          final avg = times.isEmpty
+              ? 0.0
+              : times.reduce((a, b) => a + b) / times.length;
           final colorIdx = activityNames.keys.toList().indexOf(entry.value);
 
           return BarChartGroupData(
@@ -510,8 +539,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             barRods: [
               BarChartRodData(
                 toY: avg,
-                color: activityColors[colorIdx % activityColors.length]
-                    .withValues(alpha: 0.7),
+                color: activityColors[colorIdx % activityColors.length],
                 width: 22,
                 borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(6)),

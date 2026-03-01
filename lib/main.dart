@@ -7,6 +7,10 @@ import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 
+/// Notifier global para cambiar tema claro/oscuro
+final ValueNotifier<ThemeMode> themeNotifier =
+ValueNotifier(ThemeMode.light);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -20,20 +24,31 @@ class EduMetricsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'EduMetrics',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
-      home: const AuthGate(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, currentMode, _) {
+        return MaterialApp(
+          title: 'EduMetrics',
+          debugShowCheckedModeBanner: false,
+          themeMode: currentMode,
+          theme: ThemeData(
+            colorSchemeSeed: Colors.deepPurple,
+            useMaterial3: true,
+            brightness: Brightness.light,
+          ),
+          darkTheme: ThemeData(
+            colorSchemeSeed: Colors.deepPurple,
+            useMaterial3: true,
+            brightness: Brightness.dark,
+          ),
+          home: const AuthGate(),
+        );
+      },
     );
   }
 }
 
 /// Gestiona la sesión: si ya hay login activo, va directo al Home.
-/// Si no, muestra LoginScreen.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -49,7 +64,6 @@ class AuthGate extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
-          // Usuario ya logueado - detectar modo por tamaño de pantalla
           final mode = AppModeProvider.suggestMode(context);
           return HomeScreen(mode: mode);
         }

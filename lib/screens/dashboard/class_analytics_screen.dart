@@ -174,9 +174,6 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
             const SizedBox(height: 16),
             const Text('No hay alumnos registrados',
                 style: TextStyle(fontSize: 18, color: Colors.grey)),
-            const SizedBox(height: 8),
-            Text('Añade alumnos desde la sección de gestión',
-                style: TextStyle(fontSize: 14, color: Colors.grey[500])),
           ],
         ),
       );
@@ -190,9 +187,11 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
           if (_classes.isNotEmpty)
             Row(
               children: [
-                const Text('Clase: ',
-                    style:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('Clase: ',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(width: 8),
                 DropdownButton<String>(
                   value: _selectedClass,
@@ -207,28 +206,34 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
               ],
             ),
           const SizedBox(height: 24),
-          _buildSectionTitle('Media de aciertos por alumno'),
+          _buildSectionTitle(context, 'Media de aciertos por alumno'),
           const SizedBox(height: 8),
-          SizedBox(height: 350, child: _buildStudentComparisonChart()),
+          SizedBox(height: 350, child: _buildStudentComparisonChart(context)),
           const SizedBox(height: 32),
-          _buildSectionTitle('Dificultad por actividad (media de la clase)'),
+          _buildSectionTitle(
+              context, 'Dificultad por actividad (media de la clase)'),
           const SizedBox(height: 8),
-          SizedBox(height: 300, child: _buildActivityDifficultyChart()),
+          SizedBox(height: 300, child: _buildActivityDifficultyChart(context)),
           const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
-          fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
     );
   }
 
-  Widget _buildStudentComparisonChart() {
+  Widget _buildStudentComparisonChart(BuildContext context) {
+    final labelColor = Theme.of(context).colorScheme.onSurface;
+    final gridColor = Theme.of(context).dividerColor;
     final studentIds = _filteredStudentIds();
     if (studentIds.isEmpty) return const Center(child: Text('Sin datos'));
 
@@ -277,7 +282,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
                 return SideTitleWidget(
                   meta: meta,
                   angle: -0.5,
-                  child: Text(short, style: const TextStyle(fontSize: 10)),
+                  child:
+                  Text(short, style: TextStyle(fontSize: 11, color: labelColor)),
                 );
               },
             ),
@@ -288,7 +294,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Text('${value.toInt()}%',
-                    style: const TextStyle(fontSize: 10));
+                    style: TextStyle(fontSize: 10, color: labelColor));
               },
             ),
           ),
@@ -296,6 +302,12 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
           const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
           const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: gridColor, strokeWidth: 0.5),
         ),
         borderData: FlBorderData(show: false),
         barGroups: results.asMap().entries.map((entry) {
@@ -321,7 +333,9 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
     );
   }
 
-  Widget _buildActivityDifficultyChart() {
+  Widget _buildActivityDifficultyChart(BuildContext context) {
+    final labelColor = Theme.of(context).colorScheme.onSurface;
+    final gridColor = Theme.of(context).dividerColor;
     final studentIds = _filteredStudentIds();
     final Map<String, List<bool>> aggregated = {};
 
@@ -366,7 +380,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
                   angle: -0.5,
                   child: Text(
                     activityNames[types[idx]] ?? types[idx],
-                    style: const TextStyle(fontSize: 10),
+                    style: TextStyle(fontSize: 11, color: labelColor),
                   ),
                 );
               },
@@ -378,7 +392,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Text('${value.toInt()}%',
-                    style: const TextStyle(fontSize: 10));
+                    style: TextStyle(fontSize: 10, color: labelColor));
               },
             ),
           ),
@@ -386,6 +400,12 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
           const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           rightTitles:
           const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: gridColor, strokeWidth: 0.5),
         ),
         borderData: FlBorderData(show: false),
         barGroups: types.asMap().entries.map((entry) {

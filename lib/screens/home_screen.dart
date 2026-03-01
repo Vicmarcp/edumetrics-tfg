@@ -7,6 +7,7 @@ import 'dashboard/analytics_screen.dart';
 import 'dashboard/students_management_screen.dart';
 import 'login_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   final AppMode mode;
@@ -175,11 +176,13 @@ class HomeScreen extends StatelessWidget {
                 _MenuCard(
                   icon: Icons.settings,
                   title: 'Configuración',
-                  description: 'Ajustes del sistema',
+                  description: 'Cuenta, seguridad y privacidad',
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Próximamente: Configuración')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -232,7 +235,7 @@ class _MenuCard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 64, color: Colors.blue),
+              Icon(icon, size: 64, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 16),
               Text(
                 title,
@@ -243,7 +246,7 @@ class _MenuCard extends StatelessWidget {
               Text(
                 description,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
