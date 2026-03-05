@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/app_mode.dart';
 import 'firebase_options.dart';
@@ -31,6 +32,13 @@ class EduMetricsApp extends StatelessWidget {
           title: 'EduMetrics',
           debugShowCheckedModeBanner: false,
           themeMode: currentMode,
+          locale: const Locale('es', 'ES'),
+          supportedLocales: const [Locale('es', 'ES')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           theme: ThemeData(
             colorSchemeSeed: Colors.deepPurple,
             useMaterial3: true,

@@ -67,9 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -77,12 +75,10 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
 
-      // LOGIN EXITOSO - Mostrar selector de modo
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
         _showModeSelector();
       }
-
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'Error al iniciar sesión';
 
@@ -93,7 +89,8 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (e.code == 'invalid-email') {
         errorMessage = 'Email inválido';
       } else if (e.code == 'invalid-credential') {
-        errorMessage = 'Credenciales inválidas. Verifica tu email y contraseña';
+        errorMessage =
+        'Credenciales inválidas. Verifica tu email y contraseña';
       }
 
       if (mounted) {
@@ -109,13 +106,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
       }
-
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -138,8 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Introduce tu email primero'),
-                  ),
+                      content: Text('Introduce tu email primero')),
                 );
                 return;
               }
@@ -171,7 +162,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // NUEVA FUNCIÓN: Selector de modo
   void _showModeSelector() {
     final suggestedMode = AppModeProvider.suggestMode(context);
 
@@ -186,14 +176,18 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             Text(
               'Esto optimizará la interfaz para tu dispositivo',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6)),
             ),
             const SizedBox(height: 16),
             if (suggestedMode == AppMode.pizarra)
               Text(
                 '💡 Detectamos una pantalla grande. ¿Estás en una pizarra?',
                 style: TextStyle(
-                  color: Colors.blue[700],
+                  color: Theme.of(context).colorScheme.primary,
                   fontSize: 13,
                 ),
               ),
@@ -218,7 +212,10 @@ class _LoginScreenState extends State<LoginScreen> {
             label: const Text('Pizarra/Tablet\n(Actividades táctiles)'),
             style: ElevatedButton.styleFrom(
               backgroundColor: suggestedMode == AppMode.pizarra
-                  ? Colors.blue
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+              foregroundColor: suggestedMode == AppMode.pizarra
+                  ? Theme.of(context).colorScheme.onPrimary
                   : null,
             ),
             onPressed: () {
@@ -237,13 +234,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.blue.shade50,
+      backgroundColor:
+      isDark ? colorScheme.surface : colorScheme.primary.withValues(alpha: 0.08),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Card(
-            elevation: 8,
+            elevation: isDark ? 2 : 8,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -258,25 +259,31 @@ class _LoginScreenState extends State<LoginScreen> {
                     Icon(
                       Icons.school,
                       size: 64,
-                      color: Colors.blue.shade700,
+                      color: colorScheme.primary,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'EduMetrics',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium
+                          ?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Sistema de Evaluación Interactiva',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade600,
+                      style:
+                      Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface
+                            .withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 32),
 
+                    // Email
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -284,7 +291,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         labelText: 'Email',
                         hintText: 'profesor@ejemplo.com',
                         prefixIcon: const Icon(Icons.email),
-                        errorText: _emailError.isEmpty ? null : _emailError,
+                        errorText:
+                        _emailError.isEmpty ? null : _emailError,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -294,22 +302,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    // Contraseña
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Contraseña',
                         prefixIcon: const Icon(Icons.lock),
-                        errorText: _passwordError.isEmpty ? null : _passwordError,
+                        errorText: _passwordError.isEmpty
+                            ? null
+                            : _passwordError,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                          ),
+                          icon: Icon(_obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility),
                           onPressed: () {
                             setState(() {
                               _obscurePassword = !_obscurePassword;
@@ -323,26 +332,30 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
+                    // Botón login
                     SizedBox(
                       width: double.infinity,
                       height: 48,
-                      child: ElevatedButton(
+                      child: FilledButton(
                         onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
+                        style: FilledButton.styleFrom(
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: _isLoading
                             ? const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                          MainAxisAlignment.center,
                           children: [
                             SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(Colors.white),
+                                valueColor:
+                                AlwaysStoppedAnimation(
+                                    Colors.white),
                               ),
                             ),
                             SizedBox(width: 12),
@@ -358,7 +371,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 16),
 
                     TextButton(
-                      onPressed: _isLoading ? null : _showPasswordRecovery,
+                      onPressed:
+                      _isLoading ? null : _showPasswordRecovery,
                       child: const Text('¿Olvidaste tu contraseña?'),
                     ),
                   ],

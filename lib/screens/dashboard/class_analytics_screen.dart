@@ -12,11 +12,16 @@ class ClassAnalyticsScreen extends StatefulWidget {
 
 class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
   Map<String, Map<String, dynamic>> _studentData = {};
+  List<QueryDocumentSnapshot> _allResultDocs = [];
   Map<String, Map<String, List<bool>>> _activityData = {};
   bool _loading = true;
   String? _selectedClass;
   List<String> _classes = [];
   String? _errorMessage;
+
+  // Filtro de fecha
+  String _selectedFilter = 'todo';
+  DateTimeRange? _customRange;
 
   static const Map<String, String> activityNames = {
     'comparison': 'Comparación',
@@ -79,32 +84,20 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
         }
       }
 
-      final activityData = <String, Map<String, List<bool>>>{};
-
+      List<QueryDocumentSnapshot> resultDocs = [];
       if (students.isNotEmpty) {
-        final resultsDocs =
-        await _loadResultsInBatches(students.keys.toList());
-
-        for (final doc in resultsDocs) {
-          final data = doc.data() as Map<String, dynamic>;
-          final studentId = data['studentId'] as String? ?? '';
-          final activityType = data['activityType'] as String? ?? '';
-          final correct = data['isCorrect'] as bool? ?? false;
-
-          activityData.putIfAbsent(studentId, () => {});
-          activityData[studentId]!.putIfAbsent(activityType, () => []);
-          activityData[studentId]![activityType]!.add(correct);
-        }
+        resultDocs = await _loadResultsInBatches(students.keys.toList());
       }
 
       if (mounted) {
         final sortedClasses = classes.toList()..sort();
         setState(() {
           _studentData = students;
-          _activityData = activityData;
+          _allResultDocs = resultDocs;
           _classes = sortedClasses;
           _selectedClass =
           sortedClasses.isNotEmpty ? sortedClasses.first : null;
+          _rebuildActivityData();
           _loading = false;
         });
       }
@@ -115,6 +108,94 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
           _loading = false;
         });
       }
+    }
+  }
+
+  /// Reconstruye _activityData aplicando el filtro de fecha
+  void _rebuildActivityData() {
+    final filtered = _applyDateFilter(_allResultDocs);
+    final activityData = <String, Map<String, List<bool>>>{};
+
+    for (final doc in filtered) {
+      final data = doc.data() as Map<String, dynamic>;
+      final studentId = data['studentId'] as String? ?? '';
+      final activityType = data['activityType'] as String? ?? '';
+      final correct = data['isCorrect'] as bool? ?? false;
+
+      activityData.putIfAbsent(studentId, () => {});
+      activityData[studentId]!.putIfAbsent(activityType, () => []);
+      activityData[studentId]![activityType]!.add(correct);
+    }
+
+    _activityData = activityData;
+  }
+
+  List<QueryDocumentSnapshot> _applyDateFilter(
+      List<QueryDocumentSnapshot> docs) {
+    final now = DateTime.now();
+    DateTime? start;
+
+    switch (_selectedFilter) {
+      case 'semana':
+        start = now.subtract(Duration(days: now.weekday - 1));
+        start = DateTime(start.year, start.month, start.day);
+        break;
+      case 'mes':
+        start = DateTime(now.year, now.month, 1);
+        break;
+      case 'trimestre':
+        start = DateTime(now.year, now.month - 2, 1);
+        break;
+      case 'personalizado':
+        if (_customRange != null) {
+          return docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final ts = data['timestamp'] as Timestamp?;
+            if (ts == null) return false;
+            final date = ts.toDate();
+            return date.isAfter(
+                _customRange!.start.subtract(const Duration(days: 1))) &&
+                date.isBefore(
+                    _customRange!.end.add(const Duration(days: 1)));
+          }).toList();
+        }
+        return docs;
+      default:
+        return docs;
+    }
+      return docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final ts = data['timestamp'] as Timestamp?;
+        if (ts == null) return false;
+        return ts.toDate().isAfter(start!.subtract(const Duration(seconds: 1)));
+      }).toList();
+  }
+
+  void _onFilterChanged(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+      _rebuildActivityData();
+    });
+  }
+
+  Future<void> _pickCustomRange() async {
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2025, 1, 1),
+      lastDate: DateTime.now(),
+      initialDateRange: _customRange,
+      locale: const Locale('es', 'ES'),
+      helpText: 'Selecciona un rango de fechas',
+      cancelText: 'Cancelar',
+      confirmText: 'Aplicar',
+    );
+
+    if (range != null) {
+      setState(() {
+        _customRange = range;
+        _selectedFilter = 'personalizado';
+        _rebuildActivityData();
+      });
     }
   }
 
@@ -184,6 +265,15 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Filtro de fechas ──
+          _DateFilterBar(
+            selected: _selectedFilter,
+            customRange: _customRange,
+            onChanged: _onFilterChanged,
+            onPickRange: _pickCustomRange,
+          ),
+          const SizedBox(height: 12),
+          // ── Filtro de clase ──
           if (_classes.isNotEmpty)
             Row(
               children: [
@@ -206,29 +296,40 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
               ],
             ),
           const SizedBox(height: 24),
-          _buildSectionTitle(context, 'Media de aciertos por alumno'),
-          const SizedBox(height: 8),
-          SizedBox(height: 350, child: _buildStudentComparisonChart(context)),
-          const SizedBox(height: 32),
-          _buildSectionTitle(
-              context, 'Dificultad por actividad (media de la clase)'),
-          const SizedBox(height: 8),
-          SizedBox(height: 300, child: _buildActivityDifficultyChart(context)),
-          const SizedBox(height: 32),
+          if (_activityData.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: Center(
+                child: Text('No hay resultados en el periodo seleccionado',
+                    style: TextStyle(fontSize: 16, color: Colors.grey)),
+              ),
+            )
+          else ...[
+            _buildSectionTitle(context, 'Media de aciertos por alumno'),
+            const SizedBox(height: 8),
+            SizedBox(
+                height: 350,
+                child: _buildStudentComparisonChart(context)),
+            const SizedBox(height: 32),
+            _buildSectionTitle(
+                context, 'Dificultad por actividad (media de la clase)'),
+            const SizedBox(height: 8),
+            SizedBox(
+                height: 300,
+                child: _buildActivityDifficultyChart(context)),
+            const SizedBox(height: 32),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.onSurface,
-      ),
-    );
+    return Text(title,
+        style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface));
   }
 
   Widget _buildStudentComparisonChart(BuildContext context) {
@@ -282,8 +383,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
                 return SideTitleWidget(
                   meta: meta,
                   angle: -0.5,
-                  child:
-                  Text(short, style: TextStyle(fontSize: 11, color: labelColor)),
+                  child: Text(short,
+                      style: TextStyle(fontSize: 11, color: labelColor)),
                 );
               },
             ),
@@ -292,10 +393,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 40,
-              getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}%',
-                    style: TextStyle(fontSize: 10, color: labelColor));
-              },
+              getTitlesWidget: (value, meta) => Text('${value.toInt()}%',
+                  style: TextStyle(fontSize: 10, color: labelColor)),
             ),
           ),
           topTitles:
@@ -378,10 +477,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
                 return SideTitleWidget(
                   meta: meta,
                   angle: -0.5,
-                  child: Text(
-                    activityNames[types[idx]] ?? types[idx],
-                    style: TextStyle(fontSize: 11, color: labelColor),
-                  ),
+                  child: Text(activityNames[types[idx]] ?? types[idx],
+                      style: TextStyle(fontSize: 11, color: labelColor)),
                 );
               },
             ),
@@ -390,10 +487,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 40,
-              getTitlesWidget: (value, meta) {
-                return Text('${value.toInt()}%',
-                    style: TextStyle(fontSize: 10, color: labelColor));
-              },
+              getTitlesWidget: (value, meta) => Text('${value.toInt()}%',
+                  style: TextStyle(fontSize: 10, color: labelColor)),
             ),
           ),
           topTitles:
@@ -418,7 +513,6 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
               : percent >= 50
               ? Colors.orange
               : Colors.red;
-
           return BarChartGroupData(
             x: entry.key,
             barRods: [
@@ -441,4 +535,78 @@ class _StudentResult {
   final String name;
   final double percent;
   _StudentResult({required this.name, required this.percent});
+}
+
+// ─── Widget reutilizable: barra de filtros de fecha ───
+class _DateFilterBar extends StatelessWidget {
+  final String selected;
+  final DateTimeRange? customRange;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onPickRange;
+
+  const _DateFilterBar({
+    required this.selected,
+    required this.customRange,
+    required this.onChanged,
+    required this.onPickRange,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today,
+                size: 18, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text('Periodo:',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface)),
+            const SizedBox(width: 8),
+            _chip(context, 'Todo', 'todo'),
+            _chip(context, 'Semana', 'semana'),
+            _chip(context, 'Mes', 'mes'),
+            _chip(context, 'Trimestre', 'trimestre'),
+            const SizedBox(width: 4),
+            ActionChip(
+              avatar: const Icon(Icons.date_range, size: 16),
+              label: Text(
+                selected == 'personalizado' && customRange != null
+                    ? '${_fmt(customRange!.start)} – ${_fmt(customRange!.end)}'
+                    : 'Personalizado',
+                style: const TextStyle(fontSize: 12),
+              ),
+              backgroundColor: selected == 'personalizado'
+                  ? colorScheme.primaryContainer
+                  : null,
+              onPressed: onPickRange,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(BuildContext context, String label, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSelected = selected == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: ChoiceChip(
+        label: Text(label, style: const TextStyle(fontSize: 12)),
+        selected: isSelected,
+        selectedColor: colorScheme.primaryContainer,
+        onSelected: (_) => onChanged(value),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+
+  String _fmt(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
 }
