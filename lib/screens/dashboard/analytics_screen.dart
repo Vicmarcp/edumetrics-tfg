@@ -17,6 +17,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   late TabController _tabController;
   String? _schoolId;
   bool _loading = true;
+  bool _noSchool = false;
 
   @override
   void initState() {
@@ -29,12 +30,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        if (mounted) {
-          setState(() {
-            _schoolId = 'default-school';
-            _loading = false;
-          });
-        }
+        if (mounted) setState(() { _noSchool = true; _loading = false; });
         return;
       }
 
@@ -43,19 +39,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           .doc(user.uid)
           .get();
 
+      final schoolId = userDoc.data()?['schoolId'] as String?;
+
       if (mounted) {
-        setState(() {
-          _schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
-          _loading = false;
-        });
+        if (schoolId == null || schoolId.isEmpty) {
+          setState(() { _noSchool = true; _loading = false; });
+        } else {
+          setState(() { _schoolId = schoolId; _loading = false; });
+        }
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _schoolId = 'default-school';
-          _loading = false;
-        });
-      }
+      if (mounted) setState(() { _noSchool = true; _loading = false; });
     }
   }
 
@@ -71,6 +65,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       return Scaffold(
         appBar: AppBar(title: const Text('Análisis y Estadísticas')),
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_noSchool) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Análisis y Estadísticas')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.warning_amber, size: 64, color: Colors.orange),
+                SizedBox(height: 16),
+                Text('Centro escolar no configurado',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text('Tu cuenta no tiene un centro escolar asignado.\nContacta con el administrador.',
+                    textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
@@ -119,16 +136,12 @@ class _StudentListTab extends StatelessWidget {
                 children: [
                   const Icon(Icons.error_outline, size: 48, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text(
-                    'Error al cargar los alumnos',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                  ),
+                  Text('Error al cargar los alumnos',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700])),
                   const SizedBox(height: 8),
-                  Text(
-                    '${snapshot.error}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
+                  Text('${snapshot.error}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.center),
                 ],
               ),
             ),
@@ -148,15 +161,11 @@ class _StudentListTab extends StatelessWidget {
               children: [
                 Icon(Icons.school_outlined, size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
-                const Text(
-                  'No hay alumnos registrados',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
+                const Text('No hay alumnos registrados',
+                    style: TextStyle(fontSize: 18, color: Colors.grey)),
                 const SizedBox(height: 8),
-                Text(
-                  'Añade alumnos desde la sección de gestión',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                ),
+                Text('Añade alumnos desde la sección de gestión',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500])),
               ],
             ),
           );
@@ -177,18 +186,15 @@ class _StudentListTab extends StatelessWidget {
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundImage: AssetImage(avatarPath),
-                  onBackgroundImageError: (_, _) {},
+                  onBackgroundImageError: (_, __) {},
                   child: data['avatarId'] == null
                       ? Text(
-                    (data['name'] ?? '?').substring(0, 1).toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  )
+                      (data['name'] ?? '?').substring(0, 1).toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.bold))
                       : null,
                 ),
-                title: Text(
-                  data['name'] ?? 'Sin nombre',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                title: Text(data['name'] ?? 'Sin nombre',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text(data['className'] ?? ''),
                 trailing: const Icon(Icons.bar_chart, color: Colors.blue),
                 onTap: () {

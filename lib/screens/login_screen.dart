@@ -44,8 +44,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       if (value.isEmpty) {
         _passwordError = 'La contraseña no puede estar vacía';
-      } else if (value.length < 6) {
-        _passwordError = 'La contraseña debe tener al menos 6 caracteres';
+      } else if (value.length < 8) {
+        _passwordError = 'La contraseña debe tener al menos 8 caracteres';
       } else {
         _passwordError = '';
       }
@@ -62,7 +62,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor completa todos los campos')),
+        const SnackBar(
+            content: Text('Por favor completa todos los campos')),
       );
       return;
     }
@@ -91,6 +92,12 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (e.code == 'invalid-credential') {
         errorMessage =
         'Credenciales inválidas. Verifica tu email y contraseña';
+      } else if (e.code == 'too-many-requests') {
+        errorMessage =
+        'Demasiados intentos fallidos. Cuenta bloqueada temporalmente. '
+            'Espera unos minutos o restablece tu contraseña.';
+      } else if (e.code == 'user-disabled') {
+        errorMessage = 'Esta cuenta ha sido deshabilitada';
       }
 
       if (mounted) {
@@ -98,11 +105,16 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(
             content: Text(errorMessage),
             backgroundColor: Colors.red,
-            action: SnackBarAction(
+            duration: e.code == 'too-many-requests'
+                ? const Duration(seconds: 6)
+                : const Duration(seconds: 4),
+            action: e.code != 'too-many-requests'
+                ? SnackBarAction(
               label: '¿Olvidaste tu contraseña?',
               textColor: Colors.white,
               onPressed: _showPasswordRecovery,
-            ),
+            )
+                : null,
           ),
         );
       }
@@ -201,7 +213,8 @@ class _LoginScreenState extends State<LoginScreen> {
               Navigator.of(context).pop();
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (_) => const HomeScreen(mode: AppMode.desktop),
+                  builder: (_) =>
+                  const HomeScreen(mode: AppMode.desktop),
                 ),
               );
             },
@@ -222,7 +235,8 @@ class _LoginScreenState extends State<LoginScreen> {
               Navigator.of(context).pop();
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (_) => const HomeScreen(mode: AppMode.pizarra),
+                  builder: (_) =>
+                  const HomeScreen(mode: AppMode.pizarra),
                 ),
               );
             },
@@ -238,8 +252,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-      isDark ? colorScheme.surface : colorScheme.primary.withValues(alpha: 0.08),
+      backgroundColor: isDark
+          ? colorScheme.surface
+          : colorScheme.primary.withValues(alpha: 0.08),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -256,11 +271,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.school,
-                      size: 64,
-                      color: colorScheme.primary,
-                    ),
+                    Icon(Icons.school, size: 64,
+                        color: colorScheme.primary),
                     const SizedBox(height: 16),
                     Text(
                       'EduMetrics',
@@ -275,15 +287,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'Sistema de Evaluación Interactiva',
-                      style:
-                      Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(
                         color: colorScheme.onSurface
                             .withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 32),
 
-                    // Email
                     TextField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -291,8 +304,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         labelText: 'Email',
                         hintText: 'profesor@ejemplo.com',
                         prefixIcon: const Icon(Icons.email),
-                        errorText:
-                        _emailError.isEmpty ? null : _emailError,
+                        errorText: _emailError.isEmpty
+                            ? null
+                            : _emailError,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -302,7 +316,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Contraseña
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -332,7 +345,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Botón login
                     SizedBox(
                       width: double.infinity,
                       height: 48,
@@ -362,10 +374,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text('Iniciando sesión...'),
                           ],
                         )
-                            : const Text(
-                          'Iniciar sesión',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                            : const Text('Iniciar sesión',
+                            style: TextStyle(fontSize: 16)),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -373,7 +383,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextButton(
                       onPressed:
                       _isLoading ? null : _showPasswordRecovery,
-                      child: const Text('¿Olvidaste tu contraseña?'),
+                      child:
+                      const Text('¿Olvidaste tu contraseña?'),
                     ),
                   ],
                 ),

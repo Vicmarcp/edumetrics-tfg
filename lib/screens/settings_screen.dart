@@ -44,6 +44,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  String get _schoolId => _userData?['schoolId'] as String? ?? '';
+
   @override
   Widget build(BuildContext context) {
     final user = _auth.currentUser;
@@ -56,7 +58,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── Información de la cuenta ──
           _SectionHeader(title: 'Cuenta', icon: Icons.person),
           Card(
             child: Padding(
@@ -72,22 +73,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _InfoRow(
                     icon: Icons.school,
                     label: 'Centro escolar',
-                    value: _userData?['schoolId'] ?? 'No asignado',
+                    value: _schoolId.isEmpty
+                        ? 'No asignado'
+                        : _schoolId,
                   ),
                   const Divider(height: 24),
                   _InfoRow(
                     icon: Icons.badge,
                     label: 'Nombre',
-                    value: _userData?['name'] ?? user?.displayName ?? 'No definido',
+                    value: _userData?['name'] ??
+                        user?.displayName ??
+                        'No definido',
                   ),
                 ],
               ),
             ),
           ),
-
           const SizedBox(height: 24),
 
-          // ── Apariencia ──
           _SectionHeader(title: 'Apariencia', icon: Icons.palette),
           Card(
             child: SwitchListTile(
@@ -104,10 +107,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
           ),
-
           const SizedBox(height: 24),
 
-          // ── Seguridad ──
           _SectionHeader(title: 'Seguridad', icon: Icons.lock),
           Card(
             child: Column(
@@ -115,8 +116,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.password),
                   title: const Text('Cambiar contraseña'),
-                  subtitle: const Text(
-                      'Actualiza tu contraseña actual'),
+                  subtitle:
+                  const Text('Actualiza tu contraseña actual'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showChangePasswordDialog(context),
                 ),
@@ -124,18 +125,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.mail_outline),
                   title: const Text('Recuperar contraseña'),
-                  subtitle: const Text(
-                      'Enviar email de restablecimiento'),
+                  subtitle:
+                  const Text('Enviar email de restablecimiento'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _sendPasswordResetEmail(context),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 24),
 
-          // ── Privacidad y GDPR ──
           _SectionHeader(
               title: 'Privacidad y datos', icon: Icons.privacy_tip),
           Card(
@@ -149,15 +148,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const PrivacyPolicyScreen(),
-                      ),
+                          builder: (_) =>
+                          const PrivacyPolicyScreen()),
                     );
                   },
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.download,
-                      color: Colors.blue),
+                  leading:
+                  const Icon(Icons.download, color: Colors.blue),
                   title: const Text('Solicitar mis datos'),
                   subtitle: const Text(
                       'Descargar información personal (RGPD)'),
@@ -168,47 +167,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ListTile(
                   leading: const Icon(Icons.delete_forever,
                       color: Colors.red),
-                  title: const Text(
-                    'Eliminar mi cuenta y datos',
-                    style: TextStyle(color: Colors.red),
-                  ),
+                  title: const Text('Eliminar mi cuenta y datos',
+                      style: TextStyle(color: Colors.red)),
                   subtitle: const Text(
                       'Acción irreversible — elimina todo'),
-                  trailing:
-                  const Icon(Icons.chevron_right, color: Colors.red),
+                  trailing: const Icon(Icons.chevron_right,
+                      color: Colors.red),
                   onTap: () => _showDeleteAccountDialog(context),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 24),
 
-          // ── Sesión ──
           _SectionHeader(title: 'Sesión', icon: Icons.exit_to_app),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
-                'Cerrar sesión',
-                style: TextStyle(
-                    color: Colors.red, fontWeight: FontWeight.bold),
-              ),
+              leading:
+              const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Cerrar sesión',
+                  style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold)),
               onTap: () => _logout(context),
             ),
           ),
-
           const SizedBox(height: 32),
 
-          // ── Versión ──
           Center(
-            child: Text(
-              'EduMetrics v1.0.0 — TFG 2025/2026',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[500],
-              ),
-            ),
+            child: Text('EduMetrics v1.0.0 — TFG 2025/2026',
+                style: TextStyle(
+                    fontSize: 12, color: Colors.grey[500])),
           ),
           const SizedBox(height: 16),
         ],
@@ -216,7 +205,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ─── Cambiar contraseña ───
   void _showChangePasswordDialog(BuildContext context) {
     final currentController = TextEditingController();
     final newController = TextEditingController();
@@ -249,8 +237,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               () => obscureCurrent = !obscureCurrent),
                     ),
                   ),
-                  validator: (v) =>
-                  (v == null || v.isEmpty) ? 'Introduce tu contraseña actual' : null,
+                  validator: (v) => (v == null || v.isEmpty)
+                      ? 'Introduce tu contraseña actual'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -268,8 +257,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Introduce la nueva contraseña';
-                    if (v.length < 6) return 'Mínimo 6 caracteres';
+                    if (v == null || v.isEmpty) {
+                      return 'Introduce la nueva contraseña';
+                    }
+                    if (v.length < 8) return 'Mínimo 8 caracteres';
+                    if (!v.contains(RegExp(r'[A-Z]'))) {
+                      return 'Debe contener al menos una mayúscula';
+                    }
+                    if (!v.contains(RegExp(r'[0-9]'))) {
+                      return 'Debe contener al menos un número';
+                    }
                     return null;
                   },
                 ),
@@ -306,8 +303,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     email: user.email!,
                     password: currentController.text,
                   );
-
-                  // Re-autenticar antes de cambiar
                   await user.reauthenticateWithCredential(credential);
                   await user.updatePassword(newController.text);
 
@@ -315,7 +310,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Contraseña actualizada correctamente'),
+                        content: Text(
+                            'Contraseña actualizada correctamente'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -330,7 +326,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text(msg), backgroundColor: Colors.red),
+                          content: Text(msg),
+                          backgroundColor: Colors.red),
                     );
                   }
                 }
@@ -343,7 +340,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ─── Enviar email de recuperación ───
   Future<void> _sendPasswordResetEmail(BuildContext context) async {
     final email = _auth.currentUser?.email;
     if (email == null) return;
@@ -370,10 +366,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // ─── Solicitar exportación de datos (RGPD) ───
   Future<void> _requestDataExport(BuildContext context) async {
     final user = _auth.currentUser;
     if (user == null) return;
+
+    if (_schoolId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No tienes un centro escolar asignado'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
     showDialog(
       context: context,
@@ -382,23 +387,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     try {
-      // Recopilar datos del usuario
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
 
-      final schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
-
-      // Alumnos del profesor
       final studentsSnap = await FirebaseFirestore.instance
           .collection('students')
-          .where('schoolId', isEqualTo: schoolId)
+          .where('schoolId', isEqualTo: _schoolId)
           .get();
 
       final studentIds = studentsSnap.docs.map((d) => d.id).toList();
 
-      // Resultados
       int totalResults = 0;
       if (studentIds.isNotEmpty) {
         const batchSize = 30;
@@ -411,7 +411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
           final resultsSnap = await FirebaseFirestore.instance
               .collection('results')
-              .where('schoolId', isEqualTo: schoolId)
+              .where('schoolId', isEqualTo: _schoolId)
               .where('studentId', whereIn: batch)
               .get();
           totalResults += resultsSnap.size;
@@ -419,7 +419,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
 
       if (context.mounted) {
-        Navigator.pop(context); // Cerrar loading
+        Navigator.pop(context);
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
@@ -429,15 +429,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Resumen de datos almacenados:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  const Text('Resumen de datos almacenados:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   _DataItem('Email', user.email ?? '-'),
                   _DataItem('Nombre',
                       userDoc.data()?['name'] ?? 'No definido'),
-                  _DataItem('Centro escolar', schoolId),
+                  _DataItem('Centro escolar', _schoolId),
                   _DataItem(
                       'Fecha de registro',
                       user.metadata.creationTime
@@ -445,8 +443,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           .toString()
                           .substring(0, 10) ??
                           '-'),
-                  _DataItem('Alumnos asociados',
-                      '${studentsSnap.size}'),
+                  _DataItem(
+                      'Alumnos asociados', '${studentsSnap.size}'),
                   _DataItem(
                       'Resultados registrados', '$totalResults'),
                   const SizedBox(height: 16),
@@ -481,7 +479,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // ─── Eliminar cuenta y datos (RGPD) ───
   void _showDeleteAccountDialog(BuildContext context) {
     final passwordController = TextEditingController();
 
@@ -499,19 +496,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Esta acción es IRREVERSIBLE. Se eliminarán:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Esta acción es IRREVERSIBLE. Se eliminarán:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             const Text('• Tu cuenta de usuario'),
             const Text('• Todos los alumnos asociados'),
             const Text('• Todos los resultados de actividades'),
             const SizedBox(height: 16),
-            const Text(
-              'Introduce tu contraseña para confirmar:',
-              style: TextStyle(fontSize: 13),
-            ),
+            const Text('Introduce tu contraseña para confirmar:',
+                style: TextStyle(fontSize: 13)),
             const SizedBox(height: 8),
             TextField(
               controller: passwordController,
@@ -530,11 +523,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style:
+            FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               if (passwordController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Introduce tu contraseña')),
+                  const SnackBar(
+                      content: Text('Introduce tu contraseña')),
                 );
                 return;
               }
@@ -545,41 +540,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   email: user.email!,
                   password: passwordController.text,
                 );
-
-                // Re-autenticar
                 await user.reauthenticateWithCredential(credential);
 
-                final schoolId =
-                    _userData?['schoolId'] ?? 'default-school';
-
-                // 1. Borrar resultados
-                final studentsSnap = await FirebaseFirestore.instance
-                    .collection('students')
-                    .where('schoolId', isEqualTo: schoolId)
-                    .get();
-
-                final batch = FirebaseFirestore.instance.batch();
-
-                for (final student in studentsSnap.docs) {
-                  final resultsSnap = await FirebaseFirestore.instance
-                      .collection('results')
-                      .where('studentId', isEqualTo: student.id)
+                if (_schoolId.isNotEmpty) {
+                  final studentsSnap = await FirebaseFirestore.instance
+                      .collection('students')
+                      .where('schoolId', isEqualTo: _schoolId)
                       .get();
-                  for (final result in resultsSnap.docs) {
-                    batch.delete(result.reference);
+
+                  final batch = FirebaseFirestore.instance.batch();
+
+                  for (final student in studentsSnap.docs) {
+                    final resultsSnap = await FirebaseFirestore
+                        .instance
+                        .collection('results')
+                        .where('schoolId', isEqualTo: _schoolId)
+                        .where('studentId',
+                        isEqualTo: student.id)
+                        .get();
+                    for (final result in resultsSnap.docs) {
+                      batch.delete(result.reference);
+                    }
+                    batch.delete(student.reference);
                   }
-                  // 2. Borrar alumno
-                  batch.delete(student.reference);
+
+                  batch.delete(FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid));
+
+                  await batch.commit();
                 }
 
-                // 3. Borrar documento de usuario
-                batch.delete(FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid));
-
-                await batch.commit();
-
-                // 4. Borrar cuenta de Auth
                 await user.delete();
 
                 if (context.mounted) {
@@ -626,14 +617,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ─── Cerrar sesión ───
   Future<void> _logout(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cerrar sesión'),
-        content:
-        const Text('¿Estás seguro de que quieres cerrar sesión?'),
+        content: const Text(
+            '¿Estás seguro de que quieres cerrar sesión?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -659,8 +649,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-// ─── Widgets auxiliares ───
-
 class _SectionHeader extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -670,20 +658,15 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            title,
+      child: Row(children: [
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(title,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ],
-      ),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary)),
+      ]),
     );
   }
 }
@@ -697,22 +680,17 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-            Text(value,
-                style:
-                const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-          ],
-        ),
-      ],
-    );
+    return Row(children: [
+      Icon(icon, size: 20, color: Colors.grey[600]),
+      const SizedBox(width: 12),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label,
+            style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 15, fontWeight: FontWeight.w500)),
+      ]),
+    ]);
   }
 }
 
@@ -725,17 +703,14 @@ class _DataItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 160,
-            child: Text('$label:',
-                style: const TextStyle(fontWeight: FontWeight.w500)),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          width: 160,
+          child: Text('$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500)),
+        ),
+        Expanded(child: Text(value)),
+      ]),
     );
   }
 }

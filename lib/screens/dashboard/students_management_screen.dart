@@ -16,6 +16,7 @@ class StudentsManagementScreen extends StatefulWidget {
 class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
   String? _schoolId;
   bool _loading = true;
+  bool _noSchool = false;
 
   @override
   void initState() {
@@ -27,12 +28,7 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        if (mounted) {
-          setState(() {
-            _schoolId = 'default-school';
-            _loading = false;
-          });
-        }
+        if (mounted) setState(() { _noSchool = true; _loading = false; });
         return;
       }
 
@@ -41,19 +37,17 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
           .doc(user.uid)
           .get();
 
+      final schoolId = userDoc.data()?['schoolId'] as String?;
+
       if (mounted) {
-        setState(() {
-          _schoolId = userDoc.data()?['schoolId'] ?? 'default-school';
-          _loading = false;
-        });
+        if (schoolId == null || schoolId.isEmpty) {
+          setState(() { _noSchool = true; _loading = false; });
+        } else {
+          setState(() { _schoolId = schoolId; _loading = false; });
+        }
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _schoolId = 'default-school';
-          _loading = false;
-        });
-      }
+      if (mounted) setState(() { _noSchool = true; _loading = false; });
     }
   }
 
@@ -66,10 +60,31 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
       );
     }
 
+    if (_noSchool) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Gestionar Alumnos')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.warning_amber, size: 64, color: Colors.orange),
+                SizedBox(height: 16),
+                Text('Centro escolar no configurado',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text('Tu cuenta no tiene un centro escolar asignado.\nContacta con el administrador.',
+                    textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gestionar Alumnos'),
-      ),
+      appBar: AppBar(title: const Text('Gestionar Alumnos')),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('students')
@@ -87,16 +102,12 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                   children: [
                     const Icon(Icons.error_outline, size: 48, color: Colors.red),
                     const SizedBox(height: 16),
-                    Text(
-                      'Error al cargar los alumnos',
-                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                    ),
+                    Text('Error al cargar los alumnos',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700])),
                     const SizedBox(height: 8),
-                    Text(
-                      '${snapshot.error}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
+                    Text('${snapshot.error}',
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        textAlign: TextAlign.center),
                   ],
                 ),
               ),
@@ -116,19 +127,15 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                 children: [
                   Icon(Icons.person_off, size: 80, color: Colors.grey[400]),
                   const SizedBox(height: 16),
-                  Text(
-                    'No hay alumnos registrados',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
+                  Text('No hay alumnos registrados',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600])),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.add),
                     label: const Text('Crear primer alumno'),
                     onPressed: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const AddStudentScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const AddStudentScreen()),
                       );
                     },
                   ),
@@ -152,19 +159,16 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundImage: AssetImage(avatarPath),
-                    onBackgroundImageError: (_, _) {},
+                    onBackgroundImageError: (_, __) {},
                     child: data['avatarId'] == null
                         ? Text(
-                      (data['name'] ?? '?').substring(0, 1).toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
-                    )
+                        (data['name'] ?? '?').substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold))
                         : null,
                   ),
                   title: Text(data['name'] ?? 'Sin nombre'),
-                  subtitle:
-                  Text('Clase: ${data['className'] ?? 'No asignada'}'),
+                  subtitle: Text('Clase: ${data['className'] ?? 'No asignada'}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -202,9 +206,7 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const AddStudentScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const AddStudentScreen()),
           );
         },
         icon: const Icon(Icons.add),
@@ -257,8 +259,7 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              _showPermanentDeleteConfirmation(
-                  context, studentId, studentName);
+              _showPermanentDeleteConfirmation(context, studentId, studentName);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Eliminar permanentemente'),
@@ -288,9 +289,10 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
           TextButton(
             onPressed: () async {
               try {
-                // 1. Eliminar todos los resultados del alumno
+                // Eliminar resultados con filtro schoolId
                 final results = await FirebaseFirestore.instance
                     .collection('results')
+                    .where('schoolId', isEqualTo: _schoolId)
                     .where('studentId', isEqualTo: studentId)
                     .get();
 
@@ -299,12 +301,9 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                   batch.delete(doc.reference);
                 }
 
-                // 2. Eliminar el documento del alumno
-                batch.delete(
-                  FirebaseFirestore.instance
-                      .collection('students')
-                      .doc(studentId),
-                );
+                batch.delete(FirebaseFirestore.instance
+                    .collection('students')
+                    .doc(studentId));
 
                 await batch.commit();
 
