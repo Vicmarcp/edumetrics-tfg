@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/audit_service.dart';
 import 'add_student_screen.dart';
 import 'edit_student_screen.dart';
 
@@ -159,7 +160,7 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundImage: AssetImage(avatarPath),
-                    onBackgroundImageError: (_, __) {},
+                    onBackgroundImageError: (_, _) {},
                     child: data['avatarId'] == null
                         ? Text(
                         (data['name'] ?? '?').substring(0, 1).toUpperCase(),
@@ -234,6 +235,11 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                     .collection('students')
                     .doc(studentId)
                     .update({'isActive': false});
+                await AuditService.log(
+                  action: 'deactivate_student',
+                  targetId: studentId,
+                  details: {'name': studentName},
+                );
 
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -306,6 +312,11 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                     .doc(studentId));
 
                 await batch.commit();
+                await AuditService.log(
+                  action: 'delete_student',
+                  targetId: studentId,
+                  details: {'name': studentName},
+                );
 
                 if (context.mounted) {
                   Navigator.pop(context);

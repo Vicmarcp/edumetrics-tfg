@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/audit_service.dart';
+
 class EditStudentScreen extends StatefulWidget {
   final String studentId;
   final String currentName;
@@ -101,6 +103,11 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
         'className': _selectedClass,
         'avatarId': _selectedAvatarId,
       });
+      await AuditService.log(
+        action: 'update_student',
+        targetId: widget.studentId,
+        details: {'name': name, 'className': _selectedClass},
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

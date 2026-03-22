@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/audit_service.dart';
+
 class AddStudentScreen extends StatefulWidget {
   const AddStudentScreen({super.key});
 
@@ -137,6 +139,11 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
         'isActive': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
+      await AuditService.log(
+        action: 'create_student',
+        targetId: name,
+        details: {'className': _selectedClass, 'schoolId': schoolId},
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

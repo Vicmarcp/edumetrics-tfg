@@ -186,7 +186,7 @@ class _StudentListTab extends StatelessWidget {
               child: ListTile(
                 leading: CircleAvatar(
                   backgroundImage: AssetImage(avatarPath),
-                  onBackgroundImageError: (_, __) {},
+                  onBackgroundImageError: (_, _) {},
                   child: data['avatarId'] == null
                       ? Text(
                       (data['name'] ?? '?').substring(0, 1).toUpperCase(),

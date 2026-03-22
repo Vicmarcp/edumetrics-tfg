@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../core/audit_service.dart';
 import '../main.dart';
 import 'login_screen.dart';
 import 'privacy_policy_screen.dart';
@@ -71,11 +72,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const Divider(height: 24),
                   _InfoRow(
+                    icon: Icons.verified,
+                    label: 'Email verificado',
+                    value: user?.emailVerified == true ? 'Sí' : 'No',
+                  ),
+                  const Divider(height: 24),
+                  _InfoRow(
                     icon: Icons.school,
                     label: 'Centro escolar',
-                    value: _schoolId.isEmpty
-                        ? 'No asignado'
-                        : _schoolId,
+                    value: _schoolId.isEmpty ? 'No asignado' : _schoolId,
                   ),
                   const Divider(height: 24),
                   _InfoRow(
@@ -148,8 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) =>
-                          const PrivacyPolicyScreen()),
+                          builder: (_) => const PrivacyPolicyScreen()),
                     );
                   },
                 ),
@@ -158,10 +162,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading:
                   const Icon(Icons.download, color: Colors.blue),
                   title: const Text('Solicitar mis datos'),
-                  subtitle: const Text(
-                      'Descargar información personal (RGPD)'),
+                  subtitle:
+                  const Text('Información personal (RGPD)'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _requestDataExport(context),
+                ),
+                const Divider(height: 1),
+                // Punto 14: Retención de datos
+                ListTile(
+                  leading: const Icon(Icons.auto_delete,
+                      color: Colors.orange),
+                  title: const Text('Retención de datos'),
+                  subtitle: const Text(
+                      'Eliminar resultados antiguos'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showDataRetentionDialog(context),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -182,27 +197,193 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           _SectionHeader(title: 'Sesión', icon: Icons.exit_to_app),
           Card(
-            child: ListTile(
-              leading:
-              const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Cerrar sesión',
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold)),
-              onTap: () => _logout(context),
+            child: Column(
+              children: [
+                const ListTile(
+                  leading: Icon(Icons.timer, color: Colors.blue),
+                  title: Text('Timeout de sesión'),
+                  subtitle: Text(
+                      'La sesión se cierra automáticamente tras 8 horas de inactividad'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading:
+                  const Icon(Icons.logout, color: Colors.red),
+                  title: const Text('Cerrar sesión',
+                      style: TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold)),
+                  onTap: () => _logout(context),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 32),
 
           Center(
             child: Text('EduMetrics v1.0.0 — TFG 2025/2026',
-                style: TextStyle(
-                    fontSize: 12, color: Colors.grey[500])),
+                style:
+                TextStyle(fontSize: 12, color: Colors.grey[500])),
           ),
           const SizedBox(height: 16),
         ],
       ),
     );
+  }
+
+  // ─── Punto 14: Diálogo de retención de datos ───
+  void _showDataRetentionDialog(BuildContext context) {
+    String selectedPeriod = '2_years';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.auto_delete, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Retención de datos'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Selecciona el periodo de retención. Los resultados '
+                    'más antiguos serán eliminados permanentemente.',
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Esta acción cumple con la política de minimización '
+                    'de datos del RGPD (Art. 5.1.e).',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              RadioGroup<String>(
+                groupValue: selectedPeriod,
+                onChanged: (v) =>
+                    setDialogState(() => selectedPeriod = v!),
+                child: Column(
+                  children: const [
+                    RadioListTile<String>(
+                      title: Text('Más de 6 meses'),
+                      value: '6_months',
+                    ),
+                    RadioListTile<String>(
+                      title: Text('Más de 1 año'),
+                      value: '1_year',
+                    ),
+                    RadioListTile<String>(
+                      title: Text('Más de 2 años'),
+                      value: '2_years',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: Colors.orange),
+              onPressed: () {
+                Navigator.pop(context);
+                _executeDataRetention(context, selectedPeriod);
+              },
+              child: const Text('Eliminar datos antiguos'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _executeDataRetention(
+      BuildContext context, String period) async {
+    if (_schoolId.isEmpty) return;
+
+    final now = DateTime.now();
+    DateTime cutoff;
+    switch (period) {
+      case '6_months':
+        cutoff = DateTime(now.year, now.month - 6, now.day);
+        break;
+      case '1_year':
+        cutoff = DateTime(now.year - 1, now.month, now.day);
+        break;
+      default:
+        cutoff = DateTime(now.year - 2, now.month, now.day);
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final oldResults = await FirebaseFirestore.instance
+          .collection('results')
+          .where('schoolId', isEqualTo: _schoolId)
+          .where('timestamp', isLessThan: Timestamp.fromDate(cutoff))
+          .get();
+
+      if (oldResults.docs.isEmpty) {
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+              Text('No hay resultados anteriores al periodo seleccionado'),
+              backgroundColor: Colors.blue,
+            ),
+          );
+        }
+        return;
+      }
+
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in oldResults.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      // Punto 15: Registrar en auditoría
+      await AuditService.log(
+        action: 'data_retention_purge',
+        targetId: _schoolId,
+        details: {
+          'period': period,
+          'cutoff_date': cutoff.toIso8601String(),
+          'results_deleted': oldResults.docs.length,
+        },
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '${oldResults.docs.length} resultados antiguos eliminados'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   void _showChangePasswordDialog(BuildContext context) {
@@ -296,7 +477,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             FilledButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
-
                 try {
                   final user = _auth.currentUser!;
                   final credential = EmailAuthProvider.credential(
@@ -305,13 +485,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                   await user.reauthenticateWithCredential(credential);
                   await user.updatePassword(newController.text);
-
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                            'Contraseña actualizada correctamente'),
+                        content:
+                        Text('Contraseña actualizada correctamente'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -343,7 +522,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _sendPasswordResetEmail(BuildContext context) async {
     final email = _auth.currentUser?.email;
     if (email == null) return;
-
     try {
       await _auth.sendPasswordResetEmail(email: email);
       if (context.mounted) {
@@ -358,9 +536,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al enviar email: $e'),
-            backgroundColor: Colors.red,
-          ),
+              content: Text('Error al enviar email: $e'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -398,17 +575,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .get();
 
       final studentIds = studentsSnap.docs.map((d) => d.id).toList();
-
       int totalResults = 0;
       if (studentIds.isNotEmpty) {
         const batchSize = 30;
         for (var i = 0; i < studentIds.length; i += batchSize) {
-          final batch = studentIds.sublist(
-            i,
-            i + batchSize > studentIds.length
-                ? studentIds.length
-                : i + batchSize,
-          );
+          final batch = studentIds.sublist(i,
+              i + batchSize > studentIds.length ? studentIds.length : i + batchSize);
           final resultsSnap = await FirebaseFirestore.instance
               .collection('results')
               .where('schoolId', isEqualTo: _schoolId)
@@ -417,6 +589,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           totalResults += resultsSnap.size;
         }
       }
+
+      // Punto 15: Log de exportación de datos
+      await AuditService.log(
+        action: 'export_data',
+        targetId: user.uid,
+        details: {'students': studentsSnap.size, 'results': totalResults},
+      );
 
       if (context.mounted) {
         Navigator.pop(context);
@@ -433,8 +612,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   _DataItem('Email', user.email ?? '-'),
-                  _DataItem('Nombre',
-                      userDoc.data()?['name'] ?? 'No definido'),
+                  _DataItem(
+                      'Nombre', userDoc.data()?['name'] ?? 'No definido'),
                   _DataItem('Centro escolar', _schoolId),
                   _DataItem(
                       'Fecha de registro',
@@ -443,16 +622,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           .toString()
                           .substring(0, 10) ??
                           '-'),
-                  _DataItem(
-                      'Alumnos asociados', '${studentsSnap.size}'),
-                  _DataItem(
-                      'Resultados registrados', '$totalResults'),
+                  _DataItem('Alumnos asociados', '${studentsSnap.size}'),
+                  _DataItem('Resultados registrados', '$totalResults'),
                   const SizedBox(height: 16),
                   Text(
                     'Conforme al RGPD, estos son los datos personales '
                         'que EduMetrics almacena vinculados a tu cuenta.',
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey[600]),
+                    style:
+                    TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -471,9 +648,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al obtener datos: $e'),
-            backgroundColor: Colors.red,
-          ),
+              content: Text('Error al obtener datos: $e'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -523,13 +699,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style:
-            FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               if (passwordController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Introduce tu contraseña')),
+                  const SnackBar(content: Text('Introduce tu contraseña')),
                 );
                 return;
               }
@@ -542,6 +716,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
                 await user.reauthenticateWithCredential(credential);
 
+                // Punto 15: Log antes de borrar
+                await AuditService.log(
+                  action: 'delete_account',
+                  targetId: user.uid,
+                  details: {'email': user.email, 'schoolId': _schoolId},
+                );
+
                 if (_schoolId.isNotEmpty) {
                   final studentsSnap = await FirebaseFirestore.instance
                       .collection('students')
@@ -549,25 +730,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       .get();
 
                   final batch = FirebaseFirestore.instance.batch();
-
                   for (final student in studentsSnap.docs) {
-                    final resultsSnap = await FirebaseFirestore
-                        .instance
+                    final resultsSnap = await FirebaseFirestore.instance
                         .collection('results')
                         .where('schoolId', isEqualTo: _schoolId)
-                        .where('studentId',
-                        isEqualTo: student.id)
+                        .where('studentId', isEqualTo: student.id)
                         .get();
                     for (final result in resultsSnap.docs) {
                       batch.delete(result.reference);
                     }
                     batch.delete(student.reference);
                   }
-
                   batch.delete(FirebaseFirestore.instance
                       .collection('users')
                       .doc(user.uid));
-
                   await batch.commit();
                 }
 
@@ -575,37 +751,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 if (context.mounted) {
                   Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                        builder: (_) => const LoginScreen()),
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
                         (route) => false,
                   );
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text(
-                          'Cuenta y datos eliminados correctamente'),
+                      content:
+                      Text('Cuenta y datos eliminados correctamente'),
                       backgroundColor: Colors.green,
                     ),
                   );
                 }
               } on FirebaseAuthException catch (e) {
                 String msg = 'Error al eliminar la cuenta';
-                if (e.code == 'wrong-password') {
-                  msg = 'Contraseña incorrecta';
-                }
+                if (e.code == 'wrong-password') msg = 'Contraseña incorrecta';
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(msg),
-                        backgroundColor: Colors.red),
+                        content: Text(msg), backgroundColor: Colors.red),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: $e'),
-                      backgroundColor: Colors.red,
-                    ),
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red),
                   );
                 }
               }
@@ -622,8 +793,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cerrar sesión'),
-        content: const Text(
-            '¿Estás seguro de que quieres cerrar sesión?'),
+        content:
+        const Text('¿Estás seguro de que quieres cerrar sesión?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -653,7 +824,6 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final IconData icon;
   const _SectionHeader({required this.title, required this.icon});
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -675,20 +845,16 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow(
-      {required this.icon, required this.label, required this.value});
-
+  const _InfoRow({required this.icon, required this.label, required this.value});
   @override
   Widget build(BuildContext context) {
     return Row(children: [
       Icon(icon, size: 20, color: Colors.grey[600]),
       const SizedBox(width: 12),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
         Text(value,
-            style: const TextStyle(
-                fontSize: 15, fontWeight: FontWeight.w500)),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
       ]),
     ]);
   }
@@ -698,17 +864,12 @@ class _DataItem extends StatelessWidget {
   final String label;
   final String value;
   const _DataItem(this.label, this.value);
-
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          width: 160,
-          child: Text('$label:',
-              style: const TextStyle(fontWeight: FontWeight.w500)),
-        ),
+        SizedBox(width: 160, child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.w500))),
         Expanded(child: Text(value)),
       ]),
     );
