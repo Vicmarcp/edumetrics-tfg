@@ -31,7 +31,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   int correctCount = 0;
   final List<int> times = [];
 
-  // Cache de datos del profesor y alumno para no consultar en cada respuesta
+  // Cache de datos del profesor y alumno
   String? _cachedSchoolId;
   String? _cachedTeacherId;
   String? _cachedClassName;
@@ -50,28 +50,28 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
       final user = FirebaseAuth.instance.currentUser;
       _cachedTeacherId = user?.uid ?? '';
 
-      // Obtener schoolId del profesor
       if (user != null) {
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .get();
-        _cachedSchoolId = userDoc.data()?['schoolId'] ?? 'default-school';
-      } else {
-        _cachedSchoolId = 'default-school';
+
+        final schoolId = userDoc.data()?['schoolId'] as String?;
+        if (schoolId == null || schoolId.isEmpty) {
+          // Sin schoolId no se pueden guardar resultados correctamente
+          _cachedSchoolId = null;
+        } else {
+          _cachedSchoolId = schoolId;
+        }
       }
 
-      // Obtener className del alumno
       final studentDoc = await FirebaseFirestore.instance
           .collection('students')
           .doc(widget.studentId)
           .get();
       _cachedClassName = studentDoc.data()?['className'] ?? '';
     } catch (e) {
-      debugPrint('Error loading cached data: $e');
-      _cachedSchoolId ??= 'default-school';
-      _cachedTeacherId ??= '';
-      _cachedClassName ??= '';
+      // Si falla la carga, se intentará guardar sin datos extras
     }
   }
 
@@ -129,27 +129,23 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
       bool correct,
       int timeSeconds,
       ) async {
+    // Si no hay schoolId, no guardamos (evita datos huérfanos)
+    if (_cachedSchoolId == null || _cachedSchoolId!.isEmpty) return;
+
     try {
       await FirebaseFirestore.instance.collection('results').add({
         'studentId': widget.studentId,
-        'studentName': widget.studentName,
+        // NO guardamos studentName — se resuelve por studentId en la UI
         'className': _cachedClassName ?? '',
-        'schoolId': _cachedSchoolId ?? 'default-school',
+        'schoolId': _cachedSchoolId,
         'teacherId': _cachedTeacherId ?? '',
         'activityType': widget.activityType,
-        'variant': 1,
         'timeSeconds': timeSeconds,
         'isCorrect': correct,
         'timestamp': FieldValue.serverTimestamp(),
-        'activityData': {
-          'question': question.toString(),
-          'correctAnswer': question['correctAnswer'],
-          'userAnswer': userAnswer.toString(),
-          ...question,
-        },
       });
-    } catch (e) {
-      debugPrint('Error saving result: $e');
+    } catch (_) {
+      // Error silencioso — no interrumpir la actividad del niño
     }
   }
 
@@ -173,7 +169,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     return Scaffold(
       backgroundColor: showFeedback
           ? (isCorrect ? Colors.green.shade100 : Colors.red.shade100)
-          : Colors.white,
+          : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.studentName),
         centerTitle: true,

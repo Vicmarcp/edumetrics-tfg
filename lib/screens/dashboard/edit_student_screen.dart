@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class EditStudentScreen extends StatefulWidget {
   final String studentId;
@@ -32,6 +33,12 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
     '2ºA', '2ºB', '2ºC',
   ];
 
+  static final _nameRegex = RegExp(r"^[a-zA-ZÀ-ÿñÑ\s\-']+$");
+
+  String _sanitizeName(String raw) {
+    return raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,30 +54,50 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
   }
 
   Future<void> _updateStudent() async {
-    if (_nameController.text.trim().isEmpty) {
+    final name = _sanitizeName(_nameController.text);
+
+    if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor introduce el nombre')),
       );
       return;
     }
 
-    if (_selectedClass == null || _selectedAvatarId == null) {
+    if (name.length > 50) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor completa todos los campos')),
+        const SnackBar(
+            content: Text('El nombre no puede superar los 50 caracteres')),
       );
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (!_nameRegex.hasMatch(name)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'El nombre solo puede contener letras, espacios y guiones'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_selectedClass == null || _selectedAvatarId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Por favor completa todos los campos')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
 
     try {
       await FirebaseFirestore.instance
           .collection('students')
           .doc(widget.studentId)
           .update({
-        'name': _nameController.text.trim(),
+        'name': name,
         'className': _selectedClass,
         'avatarId': _selectedAvatarId,
       });
@@ -91,20 +118,14 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Editar Alumno'),
-      ),
+      appBar: AppBar(title: const Text('Editar Alumno')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -117,14 +138,19 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                 decoration: InputDecoration(
                   labelText: 'Nombre del alumno',
                   prefixIcon: const Icon(Icons.person),
+                  counterText: '',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                maxLength: 50,
                 textCapitalization: TextCapitalization.words,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r"[a-zA-ZÀ-ÿñÑ\s\-']")),
+                ],
                 enabled: !_isLoading,
               ),
-
               const SizedBox(height: 24),
 
               DropdownButtonFormField<String>(
@@ -144,19 +170,12 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                 }).toList(),
                 onChanged: _isLoading
                     ? null
-                    : (value) {
-                  setState(() {
-                    _selectedClass = value;
-                  });
-                },
+                    : (value) => setState(() => _selectedClass = value),
               ),
-
               const SizedBox(height: 32),
 
-              Text(
-                'Avatar actual',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text('Avatar actual',
+                  style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 16),
 
               GridView.builder(
@@ -177,20 +196,21 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                   return GestureDetector(
                     onTap: _isLoading
                         ? null
-                        : () {
-                      setState(() {
-                        _selectedAvatarId = avatarId;
-                      });
-                    },
+                        : () => setState(() => _selectedAvatarId = avatarId),
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color:
-                          isSelected ? Colors.blue : Colors.grey.shade300,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade300,
                           width: isSelected ? 3 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        color: isSelected ? Colors.blue.shade50 : Colors.white,
+                        color: isSelected
+                            ? Theme.of(context)
+                            .colorScheme
+                            .primaryContainer
+                            : Theme.of(context).colorScheme.surface,
                       ),
                       child: Stack(
                         children: [
@@ -201,11 +221,8 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                                 avatarPath,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.person,
-                                    size: 40,
-                                    color: Colors.grey.shade400,
-                                  );
+                                  return Icon(Icons.person,
+                                      size: 40, color: Colors.grey.shade400);
                                 },
                               ),
                             ),
@@ -216,15 +233,13 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                               right: 4,
                               child: Container(
                                 padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.blue,
+                                decoration: BoxDecoration(
+                                  color:
+                                  Theme.of(context).colorScheme.primary,
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
+                                child: const Icon(Icons.check,
+                                    color: Colors.white, size: 16),
                               ),
                             ),
                         ],
@@ -233,7 +248,6 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                   );
                 },
               ),
-
               const SizedBox(height: 32),
 
               SizedBox(
@@ -243,10 +257,9 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
                   onPressed: _isLoading ? null : _updateStudent,
                   child: _isLoading
                       ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                       : const Text('Guardar Cambios'),
                 ),
               ),
