@@ -380,7 +380,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error: $e'), backgroundColor: Colors.red),
+              content: Text('Error al obtener los datos. Inténtalo de nuevo.'), backgroundColor: Colors.red),
         );
       }
     }
@@ -775,7 +775,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text('Error: $e'),
+                        content: Text('Error al eliminar la cuenta. Inténtalo de nuevo.'),
                         backgroundColor: Colors.red),
                   );
                 }

@@ -163,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: ${e.toString()}')),
+                  SnackBar(content: Text('Error al enviar el email. Inténtalo de nuevo.'), backgroundColor: Colors.red),
                 );
               }
             },

@@ -254,7 +254,7 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
+                    SnackBar(content: Text('Error al modificar el alumno. Inténtalo de nuevo.'), backgroundColor: Colors.red),
                   );
                 }
               }
@@ -332,7 +332,7 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
+                    SnackBar(content: Text('Error al eliminar el alumno. Inténtalo de nuevo.'), backgroundColor: Colors.red),
                   );
                 }
               }

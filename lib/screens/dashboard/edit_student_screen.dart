@@ -121,7 +121,7 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error al actualizar el alumno. Inténtalo de nuevo.'), backgroundColor: Colors.red),
         );
       }
     } finally {
