@@ -44,6 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase credentials
+# Firebase credentials (estos archivos se excluyen del repositorio)
 **/firebase_options.dart
 .firebase/
+.firebaserc
+
+# Environment variables
+.env
+.env.*
