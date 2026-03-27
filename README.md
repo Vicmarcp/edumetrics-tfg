@@ -212,7 +212,6 @@ Campos:
 
 ## Capturas de pantalla
 
-*Añadir capturas de: login, selector de alumnos, actividad en pizarra, estadísticas, modo oscuro, configuración.*
 
 ---
 
