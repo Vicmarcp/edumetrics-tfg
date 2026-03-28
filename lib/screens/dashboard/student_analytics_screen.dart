@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/export_service.dart';
+
 class StudentAnalyticsScreen extends StatefulWidget {
   final String studentId;
   final String studentName;
@@ -164,6 +166,44 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Estadísticas: ${widget.studentName}'),
+        actions: [
+          if (_filteredResults.isNotEmpty)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.download),
+              tooltip: 'Exportar',
+              onSelected: (value) {
+                if (value == 'excel') {
+                  ExportService.exportStudentToExcel(
+                    studentName: widget.studentName,
+                    results: _filteredResults,
+                  );
+                } else if (value == 'pdf') {
+                  ExportService.exportStudentToPdf(
+                    studentName: widget.studentName,
+                    results: _filteredResults,
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'excel',
+                  child: ListTile(
+                    leading: Icon(Icons.table_chart, color: Colors.green),
+                    title: Text('Exportar a Excel'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'pdf',
+                  child: ListTile(
+                    leading: Icon(Icons.picture_as_pdf, color: Colors.red),
+                    title: Text('Exportar a PDF'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
       body: _buildBody(),
     );

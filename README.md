@@ -2,9 +2,9 @@
 
 **Sistema de evaluación interactiva para Educación Primaria**
 
-Aplicación web desarrollada con Flutter que permite a profesores evaluar competencias de matemáticas y lengua en alumnos de 1º de Primaria (6-7 años) mediante actividades interactivas en pizarras digitales táctiles, con seguimiento estadístico individual y grupal en tiempo real.
+Aplicación web desarrollada con Flutter que permite a los profesores evaluar competencias de matemáticas y lengua en alumnos de 1º de Primaria (6-7 años) mediante actividades interactivas en pizarras digitales táctiles, con seguimiento estadístico individual y grupal en tiempo real.
 
-> Proyecto de Fin de Ciclo (TFG) — Desarrollo de Aplicaciones Multiplataforma (DAM)
+> Trabajo de Fin de Grado (TFG) — Desarrollo de Aplicaciones Multiplataforma (DAM)
 > Curso 2025/2026
 
 ---
@@ -27,17 +27,17 @@ Aplicación web desarrollada con Flutter que permite a profesores evaluar compet
 - Mayúsculas (identificar uso correcto)
 - Completar sílabas
 
-Cada actividad incluye cronómetro invisible, variantes aleatorias para evitar copias, feedback visual inmediato y registro automático de resultados.
+Cada actividad incluye un cronómetro invisible, variantes aleatorias para evitar copias, feedback visual inmediato y registro automático de resultados.
 
 ### Dos modos de uso
 
-- **Modo Pizarra** — Interfaz táctil con botones grandes, optimizada para pantallas de 55"+ a distancia. Los alumnos seleccionan respuestas con teclados numéricos táctiles adaptados a su edad.
+- **Modo Pizarra** — Interfaz táctil con botones grandes, optimizada para pantallas de 55 pulgadas o más. Los alumnos seleccionan respuestas con teclados numéricos táctiles adaptados a su edad.
 - **Modo Desktop** — Panel de gestión para el profesor: administración de alumnos, estadísticas y configuración.
 
 ### Estadísticas y análisis
 
-- Gráficas individuales por alumno (% aciertos, evolución temporal, tiempo medio)
-- Gráficas comparativas por clase (rendimiento medio, actividades con más dificultad)
+- Gráficas individuales por alumno (% de aciertos, evolución temporal, tiempo medio)
+- Gráficas comparativas por clase (rendimiento medio, actividades con mayor dificultad)
 - Filtros por periodo: semana, mes, trimestre o rango personalizado
 
 ### Gestión de alumnos
@@ -54,7 +54,7 @@ Cada actividad incluye cronómetro invisible, variantes aleatorias para evitar c
 La aplicación trabaja con datos de menores de edad. Se han implementado las siguientes medidas:
 
 ### Autenticación y acceso
-- Login con email y contraseña verificada
+- Inicio de sesión con email y contraseña
 - Verificación de email obligatoria
 - Política de contraseñas robusta (8+ caracteres, mayúsculas, números, especiales)
 - Registro de usuarios restringido (solo administrador)
@@ -66,13 +66,13 @@ La aplicación trabaja con datos de menores de edad. Se han implementado las sig
 - Firestore Security Rules con validación de estructura de datos
 - Aislamiento de datos por centro educativo (schoolId)
 - Resultados inmutables (no pueden ser modificados una vez creados)
-- Sanitización de entrada (solo letras, espacios y guiones en nombres)
+- Limpieza de entrada (solo letras, espacios y guiones en nombres)
 - Sin fallbacks peligrosos en la configuración de centros
 - Mensajes de error genéricos (sin exposición de datos internos)
 
 ### Cumplimiento RGPD
 - Consentimiento parental obligatorio al registrar alumnos (Art. 7 LOPDGDD)
-- Principio de minimización: solo se almacena nombre, clase y resultados
+- Principio de minimización: solo se almacenan nombre, clase y resultados
 - Avatares genéricos en lugar de fotografías reales
 - Derecho de acceso: consulta de datos desde Configuración
 - Derecho de supresión: eliminación permanente de alumnos y todos sus datos
@@ -90,14 +90,14 @@ La aplicación trabaja con datos de menores de edad. Se han implementado las sig
 
 ## Tecnologías
 
-| Componente | Tecnología |
-|-----------|-----------|
-| Framework | Flutter 3.33+ (web) |
-| Lenguaje | Dart |
-| Backend | Firebase (Auth, Firestore, Hosting, App Check) |
-| Gráficas | fl_chart |
-| Hosting | Firebase Hosting |
-| Control de versiones | Git / GitHub |
+| Componente           | Tecnología                                     |
+| -------------------- | ---------------------------------------------- |
+| Framework            | Flutter 3.33+ (web)                            |
+| Lenguaje             | Dart                                           |
+| Backend              | Firebase (Auth, Firestore, Hosting, App Check) |
+| Gráficas             | fl_chart                                       |
+| Hosting              | Firebase Hosting                               |
+| Control de versiones | Git / GitHub                                   |
 
 ---
 
@@ -140,7 +140,7 @@ lib/
 └── firebase_options.dart          # Excluido de Git
 ```
 
-**Patrón de diseño:** Todas las actividades heredan de `BaseActivityScreen`, que gestiona cronómetro, almacenamiento de resultados, feedback visual y navegación. Cada actividad solo implementa la generación de preguntas, la UI y la validación de respuestas.
+**Patrón de diseño:** Todas las actividades heredan de `BaseActivityScreen`, que gestiona el cronómetro, el almacenamiento de resultados, el feedback visual y la navegación. Cada actividad solo implementa la generación de preguntas, la UI y la validación de respuestas.
 
 ---
 
@@ -155,46 +155,48 @@ lib/
 ### Instalación
 
 1. **Clonar el repositorio:**
-```bash
-git clone https://github.com/TU_USUARIO/edumetrics.git
-cd edumetrics
-```
+
+    ```bash
+    git clone https://github.com/TU_USUARIO/edumetrics.git
+    cd edumetrics
+    ```
 
 2. **Instalar dependencias:**
-```bash
-flutter pub get
-```
+
+    ```bash
+    flutter pub get
+    ```
 
 3. **Configurar Firebase:**
     - Crear un proyecto en [Firebase Console](https://console.firebase.google.com)
     - Activar Authentication (email/contraseña)
     - Crear base de datos Firestore
     - Generar `firebase_options.dart`:
-```bash
-npm install -g firebase-tools
-firebase login
-dart pub global activate flutterfire_cli
-flutterfire configure
-```
+
+    ```bash
+    npm install -g firebase-tools
+    firebase login
+    dart pub global activate flutterfire_cli
+    flutterfire configure
+    ```
 
 4. **Crear índices compuestos en Firestore:**
-
-| Colección | Campos |
-|-----------|--------|
-| students | schoolId ↑, isActive ↑, name ↑ |
-| results | schoolId ↑, studentId ↑, timestamp ↑ |
-| results | studentId ↑, timestamp ↑ |
+    - `students`: schoolId ↑, isActive ↑, name ↑
+    - `results`: schoolId ↑, studentId ↑, timestamp ↑
+    - `results`: studentId ↑, timestamp ↑
 
 5. **Ejecutar en desarrollo:**
-```bash
-flutter run -d chrome
-```
+
+    ```bash
+    flutter run -d chrome
+    ```
 
 6. **Desplegar en producción:**
-```bash
-flutter build web --release
-firebase deploy --only hosting
-```
+
+    ```bash
+    flutter build web --release
+    firebase deploy --only hosting
+    ```
 
 ### Crear el primer usuario
 
@@ -212,6 +214,7 @@ Campos:
 
 ## Capturas de pantalla
 
+*(Próximamente)*
 
 ---
 

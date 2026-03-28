@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/export_service.dart';
+
 class ClassAnalyticsScreen extends StatefulWidget {
   final String schoolId;
   const ClassAnalyticsScreen({super.key, required this.schoolId});
@@ -271,6 +273,41 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
             customRange: _customRange,
             onChanged: _onFilterChanged,
             onPickRange: _pickCustomRange,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.table_chart, size: 18, color: Colors.green),
+                label: const Text('Excel'),
+                onPressed: _activityData.isEmpty
+                    ? null
+                    : () {
+                  ExportService.exportClassToExcel(
+                    className: _selectedClass ?? 'Todas',
+                    studentData: _studentData,
+                    activityData: _activityData,
+                    studentIds: _filteredStudentIds(),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.picture_as_pdf, size: 18, color: Colors.red),
+                label: const Text('PDF'),
+                onPressed: _activityData.isEmpty
+                    ? null
+                    : () {
+                  ExportService.exportClassToPdf(
+                    className: _selectedClass ?? 'Todas',
+                    studentData: _studentData,
+                    activityData: _activityData,
+                    studentIds: _filteredStudentIds(),
+                  );
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           // ── Filtro de clase ──
