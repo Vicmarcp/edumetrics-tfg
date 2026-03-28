@@ -126,6 +126,10 @@ class _MissingVowelsActivityState
   }
 
   @override
+  String describeQuestion(Map<String, dynamic> question) {
+    return '${question['displayWord']} (${question['word']})';
+  }
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final displayWord = question['displayWord'] as String;
     final hiddenIndex = question['hiddenIndex'] as int;

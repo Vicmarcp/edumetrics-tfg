@@ -44,7 +44,6 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     startQuestion();
   }
 
-  /// Carga schoolId, teacherId y className UNA sola vez al inicio
   Future<void> _loadCachedData() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -58,7 +57,6 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
 
         final schoolId = userDoc.data()?['schoolId'] as String?;
         if (schoolId == null || schoolId.isEmpty) {
-          // Sin schoolId no se pueden guardar resultados correctamente
           _cachedSchoolId = null;
         } else {
           _cachedSchoolId = schoolId;
@@ -75,14 +73,19 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     }
   }
 
-  // MÉTODOS ABSTRACTOS - Cada actividad DEBE implementarlos
+  // MÉTODOS ABSTRACTOS
   List<Map<String, dynamic>> generateQuestions();
   Widget buildQuestionWidget(Map<String, dynamic> question);
   Widget buildAnswerWidget(Map<String, dynamic> question);
   bool validateAnswer(Map<String, dynamic> question, dynamic userAnswer);
   void onNewQuestion(Map<String, dynamic> question) {}
 
-  // MÉTODOS CON IMPLEMENTACIÓN - Compartidos por todas las actividades
+  /// Genera una descripción legible de la pregunta para exportación.
+  /// Cada actividad puede sobreescribir esto para dar más detalle.
+  String describeQuestion(Map<String, dynamic> question) {
+    return question['correctAnswer']?.toString() ?? '';
+  }
+
   void startQuestion() {
     questionStartTime = DateTime.now();
     onNewQuestion(questions[currentQuestion]);
@@ -129,13 +132,11 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
       bool correct,
       int timeSeconds,
       ) async {
-    // Si no hay schoolId, no guardamos (evita datos huérfanos)
     if (_cachedSchoolId == null || _cachedSchoolId!.isEmpty) return;
 
     try {
       await FirebaseFirestore.instance.collection('results').add({
         'studentId': widget.studentId,
-        // NO guardamos studentName — se resuelve por studentId en la UI
         'className': _cachedClassName ?? '',
         'schoolId': _cachedSchoolId,
         'teacherId': _cachedTeacherId ?? '',
@@ -143,9 +144,13 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
         'timeSeconds': timeSeconds,
         'isCorrect': correct,
         'timestamp': FieldValue.serverTimestamp(),
+        // Detalle de la pregunta (sin datos personales) para exportación
+        'questionDetail': describeQuestion(question),
+        'correctAnswer': question['correctAnswer']?.toString() ?? '',
+        'userAnswer': userAnswer.toString(),
       });
     } catch (_) {
-      // Error silencioso — no interrumpir la actividad del niño
+      // Error silencioso
     }
   }
 

@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
+
 import 'base_activity_screen.dart';
 
 class ComparisonActivityScreen extends BaseActivityScreen {
@@ -31,6 +33,11 @@ class _ComparisonActivityState extends BaseActivityState<ComparisonActivityScree
         'correctAnswer': num1 > num2 ? 'mayor' : 'menor',
       };
     });
+  }
+
+  @override
+  String describeQuestion(Map<String, dynamic> question) {
+    return '${question['num1']} vs ${question['num2']}';
   }
 
   @override

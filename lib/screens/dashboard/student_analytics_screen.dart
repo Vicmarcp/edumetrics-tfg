@@ -167,42 +167,42 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
       appBar: AppBar(
         title: Text('Estadísticas: ${widget.studentName}'),
         actions: [
-          if (_filteredResults.isNotEmpty)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.download),
-              tooltip: 'Exportar',
-              onSelected: (value) {
-                if (value == 'excel') {
+          if (_filteredResults.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: FilledButton.tonalIcon(
+                icon: const Icon(Icons.table_chart, size: 18),
+                label: const Text('Excel'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.green.withValues(alpha: 0.15),
+                  foregroundColor: Colors.green,
+                ),
+                onPressed: () {
                   ExportService.exportStudentToExcel(
                     studentName: widget.studentName,
                     results: _filteredResults,
                   );
-                } else if (value == 'pdf') {
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilledButton.tonalIcon(
+                icon: const Icon(Icons.picture_as_pdf, size: 18),
+                label: const Text('PDF'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.withValues(alpha: 0.15),
+                  foregroundColor: Colors.red,
+                ),
+                onPressed: () {
                   ExportService.exportStudentToPdf(
                     studentName: widget.studentName,
                     results: _filteredResults,
                   );
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'excel',
-                  child: ListTile(
-                    leading: Icon(Icons.table_chart, color: Colors.green),
-                    title: Text('Exportar a Excel'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'pdf',
-                  child: ListTile(
-                    leading: Icon(Icons.picture_as_pdf, color: Colors.red),
-                    title: Text('Exportar a PDF'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
+                },
+              ),
             ),
+          ],
         ],
       ),
       body: _buildBody(),

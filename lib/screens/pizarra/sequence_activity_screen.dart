@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
-import 'base_activity_screen.dart';
+
+import 'package:flutter/material.dart';
+
 import '../../widgets/numeric_keypad.dart';
+import 'base_activity_screen.dart';
 
 class SequenceActivityScreen extends BaseActivityScreen {
   const SequenceActivityScreen({
@@ -30,6 +32,11 @@ class _SequenceActivityState extends BaseActivityState<SequenceActivityScreen> {
         'correctAnswer': middle,
       };
     });
+  }
+
+  @override
+  String describeQuestion(Map<String, dynamic> question) {
+    return '${question['num1']}, ?, ${question['num3']}';
   }
 
   @override

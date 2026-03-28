@@ -74,6 +74,13 @@ class _CapitalizationActivityState
   }
 
   @override
+  String describeQuestion(Map<String, dynamic> question) {
+    final rule = question['rule'] as String;
+    return '${question['sentence']} (${rule == 'inicio'
+        ? 'inicio de frase'
+        : 'nombre propio'})';
+  }
+  @override
   Widget buildAnswerWidget(Map<String, dynamic> question) {
     final sentence = question['sentence'] as String;
     final words = sentence.split(' ');

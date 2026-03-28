@@ -73,6 +73,17 @@ class _SyllableCompleteActivityState
   }
 
   @override
+  String describeQuestion(Map<String, dynamic> question) {
+    final syllables = question['syllables'] as List;
+    final hiddenIndex = question['hiddenIndex'] as int;
+    final parts = syllables
+        .asMap()
+        .entries
+        .map((e) => e.key == hiddenIndex ? '?' : e.value.toString())
+        .toList();
+    return '${parts.join('-')} (${syllables.join('-')})';
+  }
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final syllables = question['syllables'] as List;
     final hiddenIndex = question['hiddenIndex'] as int;

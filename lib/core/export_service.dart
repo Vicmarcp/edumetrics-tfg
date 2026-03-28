@@ -1,4 +1,4 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:web/web.dart' as web;
 
 /// Servicio de exportación de datos a Excel y PDF.
 class ExportService {
@@ -27,23 +28,24 @@ class ExportService {
   //  EXPORTAR ALUMNO INDIVIDUAL
   // ═══════════════════════════════════════════
 
-  /// Exporta los resultados de un alumno a Excel (.xlsx)
   static Future<void> exportStudentToExcel({
     required String studentName,
     required List<QueryDocumentSnapshot> results,
   }) async {
     final excel = Excel.createExcel();
-    final sheet = excel['Resultados'];
 
-    // Cabeceras
+    // Hoja 1: Detalle completo
+    final sheet = excel['Resultados'];
     sheet.appendRow([
       TextCellValue('Actividad'),
+      TextCellValue('Pregunta'),
+      TextCellValue('Respuesta correcta'),
+      TextCellValue('Respuesta del alumno'),
       TextCellValue('Resultado'),
       TextCellValue('Tiempo (s)'),
       TextCellValue('Fecha'),
     ]);
 
-    // Datos
     for (final doc in results) {
       final data = doc.data() as Map<String, dynamic>;
       final activityType = data['activityType'] as String? ?? '';
@@ -53,21 +55,28 @@ class ExportService {
       final dateStr = timestamp != null
           ? DateFormat('dd/MM/yyyy HH:mm').format(timestamp.toDate())
           : '-';
+      final questionDetail = data['questionDetail'] as String? ?? '';
+      final correctAnswer = data['correctAnswer'] as String? ?? '';
+      final userAnswer = data['userAnswer'] as String? ?? '';
 
       sheet.appendRow([
         TextCellValue(activityNames[activityType] ?? activityType),
+        TextCellValue(questionDetail),
+        TextCellValue(correctAnswer),
+        TextCellValue(userAnswer),
         TextCellValue(isCorrect ? 'Correcto' : 'Incorrecto'),
         IntCellValue(timeSeconds),
         TextCellValue(dateStr),
       ]);
     }
 
-    // Hoja resumen por actividad
+    // Hoja 2: Resumen por actividad
     final summarySheet = excel['Resumen'];
     summarySheet.appendRow([
       TextCellValue('Actividad'),
       TextCellValue('Respuestas'),
       TextCellValue('Aciertos'),
+      TextCellValue('Errores'),
       TextCellValue('% Aciertos'),
       TextCellValue('Tiempo medio (s)'),
     ]);
@@ -82,13 +91,14 @@ class ExportService {
     for (final entry in grouped.entries) {
       final correct =
           entry.value.where((d) => d['isCorrect'] == true).length;
+      final errors = entry.value.length - correct;
       final percent = entry.value.isEmpty
           ? 0
           : (correct * 100 / entry.value.length).round();
       final avgTime = entry.value.isEmpty
           ? 0
-          : (entry.value.fold<int>(
-          0, (t, d) => t + ((d['timeSeconds'] as num?)?.toInt() ?? 0)) /
+          : (entry.value.fold<int>(0,
+              (t, d) => t + ((d['timeSeconds'] as num?)?.toInt() ?? 0)) /
           entry.value.length)
           .round();
 
@@ -96,12 +106,41 @@ class ExportService {
         TextCellValue(activityNames[entry.key] ?? entry.key),
         IntCellValue(entry.value.length),
         IntCellValue(correct),
+        IntCellValue(errors),
         TextCellValue('$percent%'),
         IntCellValue(avgTime),
       ]);
     }
 
-    // Eliminar hoja por defecto
+    // Hoja 3: Errores detallados (solo fallos)
+    final errorsSheet = excel['Errores'];
+    errorsSheet.appendRow([
+      TextCellValue('Actividad'),
+      TextCellValue('Pregunta'),
+      TextCellValue('Respuesta correcta'),
+      TextCellValue('Respuesta del alumno'),
+      TextCellValue('Fecha'),
+    ]);
+
+    for (final doc in results) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['isCorrect'] == true) continue;
+
+      final activityType = data['activityType'] as String? ?? '';
+      final timestamp = data['timestamp'] as Timestamp?;
+      final dateStr = timestamp != null
+          ? DateFormat('dd/MM/yyyy').format(timestamp.toDate())
+          : '-';
+
+      errorsSheet.appendRow([
+        TextCellValue(activityNames[activityType] ?? activityType),
+        TextCellValue(data['questionDetail'] as String? ?? ''),
+        TextCellValue(data['correctAnswer'] as String? ?? ''),
+        TextCellValue(data['userAnswer'] as String? ?? ''),
+        TextCellValue(dateStr),
+      ]);
+    }
+
     if (excel.sheets.containsKey('Sheet1')) {
       excel.delete('Sheet1');
     }
@@ -116,18 +155,18 @@ class ExportService {
     }
   }
 
-  /// Exporta los resultados de un alumno a PDF
   static Future<void> exportStudentToPdf({
     required String studentName,
     required List<QueryDocumentSnapshot> results,
   }) async {
     final pdf = pw.Document();
 
-    // Calcular estadísticas
+    // Estadísticas generales
     final totalCorrect = results.where((r) {
       final data = r.data() as Map<String, dynamic>;
       return data['isCorrect'] == true;
     }).length;
+    final totalErrors = results.length - totalCorrect;
     final totalPercent =
     results.isEmpty ? 0 : (totalCorrect * 100 / results.length).round();
     final avgTime = results.isEmpty
@@ -147,6 +186,12 @@ class ExportService {
       grouped.putIfAbsent(type, () => []).add(data);
     }
 
+    // Recopilar errores
+    final errors = results.where((r) {
+      final data = r.data() as Map<String, dynamic>;
+      return data['isCorrect'] != true;
+    }).toList();
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -159,14 +204,15 @@ class ExportService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
             children: [
               _statBox('Total', '${results.length}'),
-              _statBox('Aciertos', '$totalPercent%'),
+              _statBox('Aciertos', '$totalCorrect'),
+              _statBox('Errores', '$totalErrors'),
+              _statBox('% Aciertos', '$totalPercent%'),
               _statBox('Tiempo medio', '${avgTime}s'),
-              _statBox('Actividades', '${grouped.length}'),
             ],
           ),
           pw.SizedBox(height: 24),
 
-          // Tabla por actividad
+          // Tabla resumen por actividad
           pw.Text('Desglose por actividad',
               style: pw.TextStyle(
                   fontSize: 14, fontWeight: pw.FontWeight.bold)),
@@ -180,14 +226,16 @@ class ExportService {
             cellAlignment: pw.Alignment.centerLeft,
             headers: [
               'Actividad',
-              'Respuestas',
+              'Total',
               'Aciertos',
+              'Errores',
               '% Aciertos',
-              'Tiempo medio'
+              'T. medio'
             ],
             data: grouped.entries.map((e) {
               final correct =
                   e.value.where((d) => d['isCorrect'] == true).length;
+              final actErrors = e.value.length - correct;
               final percent = e.value.isEmpty
                   ? 0
                   : (correct * 100 / e.value.length).round();
@@ -201,40 +249,57 @@ class ExportService {
                 activityNames[e.key] ?? e.key,
                 '${e.value.length}',
                 '$correct',
+                '$actErrors',
                 '$percent%',
                 '${actAvgTime}s',
               ];
             }).toList(),
           ),
-          pw.SizedBox(height: 24),
 
-          // Tabla detallada
-          pw.Text('Detalle de resultados',
-              style: pw.TextStyle(
-                  fontSize: 14, fontWeight: pw.FontWeight.bold)),
-          pw.SizedBox(height: 8),
-          pw.TableHelper.fromTextArray(
-            headerStyle:
-            pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-            cellStyle: const pw.TextStyle(fontSize: 9),
-            headerDecoration:
-            const pw.BoxDecoration(color: PdfColors.grey300),
-            headers: ['Actividad', 'Resultado', 'Tiempo', 'Fecha'],
-            data: results.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              final ts = data['timestamp'] as Timestamp?;
-              return [
-                activityNames[data['activityType']] ??
-                    data['activityType'] ??
-                    '',
-                data['isCorrect'] == true ? 'Correcto' : 'Incorrecto',
-                '${(data['timeSeconds'] as num?)?.toInt() ?? 0}s',
-                ts != null
-                    ? DateFormat('dd/MM/yyyy').format(ts.toDate())
-                    : '-',
-              ];
-            }).toList(),
-          ),
+          // Detalle de errores
+          if (errors.isNotEmpty) ...[
+            pw.SizedBox(height: 24),
+            pw.Text('Detalle de errores',
+                style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.red700)),
+            pw.SizedBox(height: 4),
+            pw.Text(
+                'Estas son las preguntas que el alumno ha respondido incorrectamente:',
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 8),
+            pw.TableHelper.fromTextArray(
+              headerStyle:
+              pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              cellStyle: const pw.TextStyle(fontSize: 9),
+              headerDecoration:
+              const pw.BoxDecoration(color: PdfColors.red50),
+              headers: [
+                'Actividad',
+                'Pregunta',
+                'Respuesta correcta',
+                'Respuesta alumno',
+                'Fecha'
+              ],
+              data: errors.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final ts = data['timestamp'] as Timestamp?;
+                return [
+                  activityNames[data['activityType']] ??
+                      data['activityType'] ??
+                      '',
+                  data['questionDetail'] ?? '',
+                  data['correctAnswer'] ?? '',
+                  data['userAnswer'] ?? '',
+                  ts != null
+                      ? DateFormat('dd/MM/yyyy').format(ts.toDate())
+                      : '-',
+                ];
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -250,7 +315,6 @@ class ExportService {
   //  EXPORTAR CLASE
   // ═══════════════════════════════════════════
 
-  /// Exporta las estadísticas de clase a Excel (.xlsx)
   static Future<void> exportClassToExcel({
     required String className,
     required Map<String, Map<String, dynamic>> studentData,
@@ -259,30 +323,36 @@ class ExportService {
   }) async {
     final excel = Excel.createExcel();
 
-    // Hoja 1: Resumen por alumno
+    // Hoja 1: Por alumno
     final summarySheet = excel['Por alumno'];
     summarySheet.appendRow([
       TextCellValue('Alumno'),
+      TextCellValue('Clase'),
       TextCellValue('Respuestas'),
       TextCellValue('Aciertos'),
+      TextCellValue('Errores'),
       TextCellValue('% Aciertos'),
     ]);
 
     for (final id in studentIds) {
       final name = studentData[id]?['name'] ?? '?';
+      final cls = studentData[id]?['className'] ?? '';
       final activities = activityData[id];
       if (activities == null) continue;
 
       final allResults = activities.values.expand((e) => e).toList();
       final correct = allResults.where((r) => r).length;
+      final errors = allResults.length - correct;
       final percent = allResults.isEmpty
           ? 0
           : (correct * 100 / allResults.length).round();
 
       summarySheet.appendRow([
         TextCellValue(name),
+        TextCellValue(cls),
         IntCellValue(allResults.length),
         IntCellValue(correct),
+        IntCellValue(errors),
         TextCellValue('$percent%'),
       ]);
     }
@@ -293,6 +363,7 @@ class ExportService {
       TextCellValue('Actividad'),
       TextCellValue('Respuestas'),
       TextCellValue('Aciertos'),
+      TextCellValue('Errores'),
       TextCellValue('% Aciertos'),
     ]);
 
@@ -307,6 +378,7 @@ class ExportService {
 
     for (final entry in aggregated.entries) {
       final correct = entry.value.where((r) => r).length;
+      final errors = entry.value.length - correct;
       final percent = entry.value.isEmpty
           ? 0
           : (correct * 100 / entry.value.length).round();
@@ -314,6 +386,7 @@ class ExportService {
         TextCellValue(activityNames[entry.key] ?? entry.key),
         IntCellValue(entry.value.length),
         IntCellValue(correct),
+        IntCellValue(errors),
         TextCellValue('$percent%'),
       ]);
     }
@@ -332,7 +405,6 @@ class ExportService {
     }
   }
 
-  /// Exporta las estadísticas de clase a PDF
   static Future<void> exportClassToPdf({
     required String className,
     required Map<String, Map<String, dynamic>> studentData,
@@ -345,16 +417,25 @@ class ExportService {
     final List<List<String>> studentRows = [];
     for (final id in studentIds) {
       final name = studentData[id]?['name'] ?? '?';
+      final cls = studentData[id]?['className'] ?? '';
       final activities = activityData[id];
       if (activities == null) continue;
 
       final allResults = activities.values.expand((e) => e).toList();
       final correct = allResults.where((r) => r).length;
+      final errors = allResults.length - correct;
       final percent = allResults.isEmpty
           ? 0
           : (correct * 100 / allResults.length).round();
-      studentRows
-          .add([name, '${allResults.length}', '$correct', '$percent%']);
+      studentRows.add(
+          [
+            name,
+            cls,
+            '${allResults.length}',
+            '$correct',
+            '$errors',
+            '$percent%'
+          ]);
     }
 
     // Datos por actividad
@@ -393,7 +474,14 @@ class ExportService {
             cellStyle: const pw.TextStyle(fontSize: 10),
             headerDecoration:
             const pw.BoxDecoration(color: PdfColors.grey300),
-            headers: ['Alumno', 'Respuestas', 'Aciertos', '% Aciertos'],
+            headers: [
+              'Alumno',
+              'Clase',
+              'Total',
+              'Aciertos',
+              'Errores',
+              '% Aciertos'
+            ],
             data: studentRows,
           ),
           pw.SizedBox(height: 24),
@@ -408,9 +496,16 @@ class ExportService {
             cellStyle: const pw.TextStyle(fontSize: 10),
             headerDecoration:
             const pw.BoxDecoration(color: PdfColors.grey300),
-            headers: ['Actividad', 'Respuestas', 'Aciertos', '% Aciertos'],
+            headers: [
+              'Actividad',
+              'Respuestas',
+              'Aciertos',
+              'Errores',
+              '% Aciertos'
+            ],
             data: aggregated.entries.map((e) {
               final correct = e.value.where((r) => r).length;
+              final errors = e.value.length - correct;
               final percent = e.value.isEmpty
                   ? 0
                   : (correct * 100 / e.value.length).round();
@@ -418,6 +513,7 @@ class ExportService {
                 activityNames[e.key] ?? e.key,
                 '${e.value.length}',
                 '$correct',
+                '$errors',
                 '$percent%',
               ];
             }).toList(),
@@ -514,12 +610,17 @@ class ExportService {
 
   static void _downloadFile(
       Uint8List bytes, String filename, String mimeType) {
-    final blob = html.Blob([bytes], mimeType);
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    html.AnchorElement(href: url)
-      ..setAttribute('download', filename)
-      ..click();
-    html.Url.revokeObjectUrl(url);
+    final blob = web.Blob(
+      [bytes.toJS].toJS,
+      web.BlobPropertyBag(type: mimeType),
+    );
+    final url = web.URL.createObjectURL(blob);
+    final anchor =
+    web.document.createElement('a') as web.HTMLAnchorElement;
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    web.URL.revokeObjectURL(url);
   }
 
   static String _sanitizeFilename(String name) {

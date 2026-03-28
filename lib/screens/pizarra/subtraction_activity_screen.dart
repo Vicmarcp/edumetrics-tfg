@@ -34,6 +34,10 @@ class _SubtractionActivityState extends BaseActivityState<SubtractionActivityScr
   }
 
   @override
+  String describeQuestion(Map<String, dynamic> question) {
+    return '${question['num1']} − ${question['num2']}';
+  }
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

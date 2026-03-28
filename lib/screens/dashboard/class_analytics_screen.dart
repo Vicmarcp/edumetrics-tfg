@@ -278,9 +278,13 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.table_chart, size: 18, color: Colors.green),
-                label: const Text('Excel'),
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.table_chart, size: 18),
+                label: const Text('Exportar Excel'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.green.withValues(alpha: 0.15),
+                  foregroundColor: Colors.green,
+                ),
                 onPressed: _activityData.isEmpty
                     ? null
                     : () {
@@ -293,9 +297,13 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
                 },
               ),
               const SizedBox(width: 8),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.picture_as_pdf, size: 18, color: Colors.red),
-                label: const Text('PDF'),
+              FilledButton.tonalIcon(
+                icon: const Icon(Icons.picture_as_pdf, size: 18),
+                label: const Text('Exportar PDF'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.withValues(alpha: 0.15),
+                  foregroundColor: Colors.red,
+                ),
                 onPressed: _activityData.isEmpty
                     ? null
                     : () {

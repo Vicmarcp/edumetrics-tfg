@@ -109,6 +109,10 @@ class _SyllableCountActivityState
   }
 
   @override
+  String describeQuestion(Map<String, dynamic> question) {
+    return '${question['word']}: ¿cuántas sílabas?';
+  }
+  @override
   Widget buildAnswerWidget(Map<String, dynamic> question) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

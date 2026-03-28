@@ -36,6 +36,12 @@ class _PlaceValueActivityState extends BaseActivityState<PlaceValueActivityScree
   }
 
   @override
+  String describeQuestion(Map<String, dynamic> question) {
+    final askTens = question['askTens'] as bool;
+    return '${question['number']}: ¿${askTens ? 'Decenas' : 'Unidades'}?';
+  }
+
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final number = question['number'] as int;
     final askTens = question['askTens'] as bool;
