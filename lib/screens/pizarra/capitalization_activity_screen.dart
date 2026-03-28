@@ -50,7 +50,16 @@ class _CapitalizationActivityState
     final random = Random();
     final shuffled = List<Map<String, dynamic>>.from(_sentenceBank)
       ..shuffle(random);
-    return shuffled.take(totalQuestions).toList();
+    return shuffled.take(totalQuestions).map((item) {
+      final words = (item['sentence'] as String).split(' ');
+      final correctIndex = item['correctIndex'] as int;
+      return {
+        'sentence': item['sentence'],
+        'correctIndex': correctIndex,
+        'rule': item['rule'],
+        'correctAnswer': words[correctIndex],
+      };
+    }).toList();
   }
 
   @override
@@ -91,7 +100,7 @@ class _CapitalizationActivityState
       alignment: WrapAlignment.center,
       children: words.asMap().entries.map((entry) {
         return ElevatedButton(
-          onPressed: () => handleAnswer(entry.key),
+          onPressed: () => handleAnswer(entry.value),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.deepPurple.shade50,
             foregroundColor: Colors.deepPurple,
@@ -116,6 +125,9 @@ class _CapitalizationActivityState
 
   @override
   bool validateAnswer(Map<String, dynamic> question, dynamic userAnswer) {
-    return userAnswer == question['correctIndex'];
+    final sentence = question['sentence'] as String;
+    final words = sentence.split(' ');
+    final correctWord = words[question['correctIndex'] as int];
+    return userAnswer.toString() == correctWord;
   }
 }

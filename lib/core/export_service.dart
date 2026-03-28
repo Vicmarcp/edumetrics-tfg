@@ -1,4 +1,4 @@
-import 'dart:js_interop';
+import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:web/web.dart' as web;
 
 /// Servicio de exportación de datos a Excel y PDF.
 class ExportService {
@@ -56,8 +55,8 @@ class ExportService {
           ? DateFormat('dd/MM/yyyy HH:mm').format(timestamp.toDate())
           : '-';
       final questionDetail = data['questionDetail'] as String? ?? '';
-      final correctAnswer = data['correctAnswer'] as String? ?? '';
-      final userAnswer = data['userAnswer'] as String? ?? '';
+      final correctAnswer = data['correctAnswer']?.toString() ?? '';
+      final userAnswer = data['userAnswer']?.toString() ?? '';
 
       sheet.appendRow([
         TextCellValue(activityNames[activityType] ?? activityType),
@@ -112,7 +111,7 @@ class ExportService {
       ]);
     }
 
-    // Hoja 3: Errores detallados (solo fallos)
+    // Hoja 3: Errores detallados
     final errorsSheet = excel['Errores'];
     errorsSheet.appendRow([
       TextCellValue('Actividad'),
@@ -134,9 +133,9 @@ class ExportService {
 
       errorsSheet.appendRow([
         TextCellValue(activityNames[activityType] ?? activityType),
-        TextCellValue(data['questionDetail'] as String? ?? ''),
-        TextCellValue(data['correctAnswer'] as String? ?? ''),
-        TextCellValue(data['userAnswer'] as String? ?? ''),
+        TextCellValue(data['questionDetail']?.toString() ?? ''),
+        TextCellValue(data['correctAnswer']?.toString() ?? ''),
+        TextCellValue(data['userAnswer']?.toString() ?? ''),
         TextCellValue(dateStr),
       ]);
     }
@@ -161,7 +160,6 @@ class ExportService {
   }) async {
     final pdf = pw.Document();
 
-    // Estadísticas generales
     final totalCorrect = results.where((r) {
       final data = r.data() as Map<String, dynamic>;
       return data['isCorrect'] == true;
@@ -178,7 +176,6 @@ class ExportService {
         results.length)
         .round();
 
-    // Agrupar por actividad
     final Map<String, List<Map<String, dynamic>>> grouped = {};
     for (final result in results) {
       final data = result.data() as Map<String, dynamic>;
@@ -186,7 +183,6 @@ class ExportService {
       grouped.putIfAbsent(type, () => []).add(data);
     }
 
-    // Recopilar errores
     final errors = results.where((r) {
       final data = r.data() as Map<String, dynamic>;
       return data['isCorrect'] != true;
@@ -199,7 +195,6 @@ class ExportService {
             _buildPdfHeader('Informe Individual', studentName),
         footer: (context) => _buildPdfFooter(context),
         build: (context) => [
-          // Resumen
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
             children: [
@@ -212,7 +207,6 @@ class ExportService {
           ),
           pw.SizedBox(height: 24),
 
-          // Tabla resumen por actividad
           pw.Text('Desglose por actividad',
               style: pw.TextStyle(
                   fontSize: 14, fontWeight: pw.FontWeight.bold)),
@@ -255,18 +249,57 @@ class ExportService {
               ];
             }).toList(),
           ),
+          pw.SizedBox(height: 24),
 
-          // Detalle de errores
+          // Detalle de TODAS las respuestas
+          pw.SizedBox(height: 24),
+          pw.Text('Detalle de todas las respuestas',
+              style: pw.TextStyle(
+                  fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 8),
+          pw.TableHelper.fromTextArray(
+            headerStyle:
+            pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration:
+            const pw.BoxDecoration(color: PdfColors.grey300),
+            headers: [
+              'Actividad',
+              'Pregunta',
+              'Correcta',
+              'Alumno',
+              'Resultado',
+              'Fecha'
+            ],
+            data: results.map((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final ts = data['timestamp'] as Timestamp?;
+              return [
+                activityNames[data['activityType']] ??
+                    data['activityType'] ??
+                    '',
+                data['questionDetail']?.toString() ?? '',
+                data['correctAnswer']?.toString() ?? '',
+                data['userAnswer']?.toString() ?? '',
+                data['isCorrect'] == true ? 'Correcto' : 'FALLO',
+                ts != null
+                    ? DateFormat('dd/MM/yyyy').format(ts.toDate())
+                    : '-',
+              ];
+            }).toList(),
+          ),
+
+          // Resumen de errores
           if (errors.isNotEmpty) ...[
             pw.SizedBox(height: 24),
-            pw.Text('Detalle de errores',
+            pw.Text('Resumen de errores (${errors.length})',
                 style: pw.TextStyle(
                     fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColors.red700)),
             pw.SizedBox(height: 4),
             pw.Text(
-                'Estas son las preguntas que el alumno ha respondido incorrectamente:',
+                'Preguntas que el alumno ha respondido incorrectamente:',
                 style: const pw.TextStyle(
                     fontSize: 10, color: PdfColors.grey700)),
             pw.SizedBox(height: 8),
@@ -279,8 +312,8 @@ class ExportService {
               headers: [
                 'Actividad',
                 'Pregunta',
-                'Respuesta correcta',
-                'Respuesta alumno',
+                'Correcta',
+                'Alumno',
                 'Fecha'
               ],
               data: errors.map((doc) {
@@ -290,9 +323,9 @@ class ExportService {
                   activityNames[data['activityType']] ??
                       data['activityType'] ??
                       '',
-                  data['questionDetail'] ?? '',
-                  data['correctAnswer'] ?? '',
-                  data['userAnswer'] ?? '',
+                  data['questionDetail']?.toString() ?? '',
+                  data['correctAnswer']?.toString() ?? '',
+                  data['userAnswer']?.toString() ?? '',
                   ts != null
                       ? DateFormat('dd/MM/yyyy').format(ts.toDate())
                       : '-',
@@ -323,7 +356,6 @@ class ExportService {
   }) async {
     final excel = Excel.createExcel();
 
-    // Hoja 1: Por alumno
     final summarySheet = excel['Por alumno'];
     summarySheet.appendRow([
       TextCellValue('Alumno'),
@@ -357,7 +389,6 @@ class ExportService {
       ]);
     }
 
-    // Hoja 2: Por actividad
     final actSheet = excel['Por actividad'];
     actSheet.appendRow([
       TextCellValue('Actividad'),
@@ -413,7 +444,6 @@ class ExportService {
   }) async {
     final pdf = pw.Document();
 
-    // Datos por alumno
     final List<List<String>> studentRows = [];
     for (final id in studentIds) {
       final name = studentData[id]?['name'] ?? '?';
@@ -438,7 +468,6 @@ class ExportService {
           ]);
     }
 
-    // Datos por actividad
     final Map<String, List<bool>> aggregated = {};
     for (final id in studentIds) {
       final activities = activityData[id];
@@ -539,8 +568,7 @@ class ExportService {
       padding: const pw.EdgeInsets.only(bottom: 8),
       decoration: const pw.BoxDecoration(
         border: pw.Border(
-            bottom:
-            pw.BorderSide(width: 2, color: PdfColors.deepPurple)),
+            bottom: pw.BorderSide(width: 2, color: PdfColors.deepPurple)),
       ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -610,17 +638,12 @@ class ExportService {
 
   static void _downloadFile(
       Uint8List bytes, String filename, String mimeType) {
-    final blob = web.Blob(
-      [bytes.toJS].toJS,
-      web.BlobPropertyBag(type: mimeType),
-    );
-    final url = web.URL.createObjectURL(blob);
-    final anchor =
-    web.document.createElement('a') as web.HTMLAnchorElement;
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
-    web.URL.revokeObjectURL(url);
+    final blob = html.Blob([bytes], mimeType);
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.AnchorElement(href: url)
+      ..setAttribute('download', filename)
+      ..click();
+    html.Url.revokeObjectUrl(url);
   }
 
   static String _sanitizeFilename(String name) {

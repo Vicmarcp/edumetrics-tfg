@@ -121,6 +121,7 @@ class _MissingVowelsActivityState
         'displayWord': displayWord,
         'hiddenVowel': hiddenVowel,
         'hiddenIndex': hiddenIndex,
+        'correctAnswer': hiddenVowel,
       };
     }).toList();
   }

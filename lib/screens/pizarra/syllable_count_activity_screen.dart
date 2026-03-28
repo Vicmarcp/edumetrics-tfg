@@ -69,7 +69,13 @@ class _SyllableCountActivityState
     final random = Random();
     final shuffled = List<Map<String, dynamic>>.from(_wordBank)
       ..shuffle(random);
-    return shuffled.take(totalQuestions).toList();
+    return shuffled.take(totalQuestions).map((item) {
+      return {
+        'word': item['word'],
+        'syllables': item['syllables'],
+        'correctAnswer': item['syllables'],
+      };
+    }).toList();
   }
 
   @override

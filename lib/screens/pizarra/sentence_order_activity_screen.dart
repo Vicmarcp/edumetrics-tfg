@@ -63,18 +63,17 @@ class _SentenceOrderActivityState
         'sentence': sentence,
         'words': words,
         'scrambled': scrambled,
+        'correctAnswer': sentence,
       };
     }).toList();
   }
 
-  override
-  String
-
-  describeQuestion(Map<String, dynamic> question) {
+  @override
+  String describeQuestion(Map<String, dynamic> question) {
     return question['sentence'] as String;
   }
 
-  @@override
+  @override
   void onNewQuestion(Map<String, dynamic> question) {
     _selectedWords = [];
     _availableWords = List<String>.from(question['scrambled']);
