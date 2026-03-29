@@ -348,11 +348,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
-      final batch = FirebaseFirestore.instance.batch();
+      // Firestore batch limit: 500 operaciones
+      const maxBatch = 500;
+      var batch = FirebaseFirestore.instance.batch();
+      var count = 0;
+
       for (final doc in oldResults.docs) {
+        if (count >= maxBatch) {
+          await batch.commit();
+          batch = FirebaseFirestore.instance.batch();
+          count = 0;
+        }
         batch.delete(doc.reference);
+        count++;
       }
-      await batch.commit();
+      if (count > 0) await batch.commit();
 
       // Punto 15: Registrar en auditoría
       await AuditService.log(
@@ -477,8 +487,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             FilledButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
+                final user = _auth.currentUser;
+                if (user == null || user.email == null) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Sesión expirada. Inicia sesión de nuevo.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                  return;
+                }
                 try {
-                  final user = _auth.currentUser!;
                   final credential = EmailAuthProvider.credential(
                     email: user.email!,
                     password: currentController.text,
@@ -536,7 +558,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error al enviar email: $e'),
+              content: Text('Error al enviar el email de recuperación'),
               backgroundColor: Colors.red),
         );
       }
@@ -648,7 +670,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error al obtener datos: $e'),
+              content: Text('Error al obtener los datos. Inténtalo de nuevo.'),
               backgroundColor: Colors.red),
         );
       }
@@ -708,8 +730,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return;
               }
 
+              final user = _auth.currentUser;
+              if (user == null || user.email == null) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Sesión expirada. Inicia sesión de nuevo.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
               try {
-                final user = _auth.currentUser!;
                 final credential = EmailAuthProvider.credential(
                   email: user.email!,
                   password: passwordController.text,
@@ -729,7 +762,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       .where('schoolId', isEqualTo: _schoolId)
                       .get();
 
-                  final batch = FirebaseFirestore.instance.batch();
+                  // Firestore batch limit: 500 operaciones
+                  const maxBatch = 499;
+                  var batch = FirebaseFirestore.instance.batch();
+                  var count = 0;
+
                   for (final student in studentsSnap.docs) {
                     final resultsSnap = await FirebaseFirestore.instance
                         .collection('results')
@@ -737,14 +774,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         .where('studentId', isEqualTo: student.id)
                         .get();
                     for (final result in resultsSnap.docs) {
+                      if (count >= maxBatch) {
+                        await batch.commit();
+                        batch = FirebaseFirestore.instance.batch();
+                        count = 0;
+                      }
                       batch.delete(result.reference);
+                      count++;
+                    }
+                    if (count >= maxBatch) {
+                      await batch.commit();
+                      batch = FirebaseFirestore.instance.batch();
+                      count = 0;
                     }
                     batch.delete(student.reference);
+                    count++;
+                  }
+
+                  if (count >= maxBatch) {
+                    await batch.commit();
+                    batch = FirebaseFirestore.instance.batch();
+                    count = 0;
                   }
                   batch.delete(FirebaseFirestore.instance
                       .collection('users')
                       .doc(user.uid));
-                  await batch.commit();
+                  count++;
+
+                  if (count > 0) await batch.commit();
                 }
 
                 await user.delete();

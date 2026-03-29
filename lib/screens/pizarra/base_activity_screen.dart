@@ -68,7 +68,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
           .doc(widget.studentId)
           .get();
       _cachedClassName = studentDoc.data()?['className'] ?? '';
-    } catch (e) {
+    } catch (_) {
       // Si falla la carga, se intentará guardar sin datos extras
     }
   }
@@ -150,7 +150,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
         'userAnswer': userAnswer.toString(),
       });
     } catch (_) {
-      // Error silencioso
+      // Error silencioso — no interrumpir la actividad del niño
     }
   }
 

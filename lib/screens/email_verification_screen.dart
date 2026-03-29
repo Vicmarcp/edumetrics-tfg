@@ -54,7 +54,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al enviar email: $e'),
+            content: Text('Error al enviar el email de verificación'),
             backgroundColor: Colors.red,
           ),
         );

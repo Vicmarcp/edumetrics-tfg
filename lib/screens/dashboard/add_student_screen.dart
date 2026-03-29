@@ -157,7 +157,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al crear alumno: $e')),
+          SnackBar(
+              content: Text('Error al crear el alumno. Inténtalo de nuevo.'),
+              backgroundColor: Colors.red),
         );
       }
     } finally {

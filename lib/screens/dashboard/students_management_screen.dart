@@ -106,8 +106,8 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                     Text('Error al cargar los alumnos',
                         style: TextStyle(fontSize: 16, color: Colors.grey[700])),
                     const SizedBox(height: 8),
-                    Text('${snapshot.error}',
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    const Text('Comprueba tu conexión e inténtalo de nuevo.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
                         textAlign: TextAlign.center),
                   ],
                 ),
@@ -302,9 +302,19 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
                     .where('studentId', isEqualTo: studentId)
                     .get();
 
-                final batch = FirebaseFirestore.instance.batch();
+                // Firestore batch limit: 500 operaciones
+                const maxBatch = 499;
+                var batch = FirebaseFirestore.instance.batch();
+                var count = 0;
+
                 for (final doc in results.docs) {
+                  if (count >= maxBatch) {
+                    await batch.commit();
+                    batch = FirebaseFirestore.instance.batch();
+                    count = 0;
+                  }
                   batch.delete(doc.reference);
+                  count++;
                 }
 
                 batch.delete(FirebaseFirestore.instance
