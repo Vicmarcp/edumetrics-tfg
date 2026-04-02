@@ -136,7 +136,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     });
 
     await saveResult(question, userAnswer, correct, timeSeconds);
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future.delayed(Duration(milliseconds: correct ? 1500 : 3000));
 
     if (mounted) {
       setState(() {
@@ -433,10 +433,44 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
                 buildAnswerWidget(question),
                 const SizedBox(height: 32),
                 if (showFeedback)
-                  Icon(
-                    isCorrect ? Icons.check_circle : Icons.cancel,
-                    size: 120,
-                    color: isCorrect ? Colors.green : Colors.red,
+                  Column(
+                    children: [
+                      Icon(
+                        isCorrect ? Icons.check_circle : Icons.cancel,
+                        size: 100,
+                        color: isCorrect ? Colors.green : Colors.red,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        isCorrect ? '¡Correcto!' : 'Incorrecto',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: isCorrect ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      if (!isCorrect) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange, width: 2),
+                          ),
+                          child: Text(
+                            'La respuesta correcta es: ${questions[currentQuestion]['correctAnswer']}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
               ],
             ),
