@@ -73,6 +73,55 @@ class _SyllableCompleteActivityState
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Mira esta palabra incompleta:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _exampleSyllable('GA', false),
+          _exampleSyllable('?', true),
+        ]),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: const Text('La palabra es GA-TO\nFalta la sílaba TO ✓',
+              style: TextStyle(fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green), textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
+
+  Widget _exampleSyllable(String text, bool isHidden) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 80),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isHidden ? Colors.amber.withValues(alpha: 0.15) : Colors.green
+              .withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: isHidden ? Colors.amber.shade700 : Colors.green,
+              width: isHidden ? 4 : 2),
+        ),
+        child: Center(child: Text(text, style: TextStyle(fontSize: 44,
+            fontWeight: FontWeight.bold,
+            color: isHidden ? Colors.amber.shade700 : Colors.green.shade700))),
+      ),
+    );
+  }
+
+  @override
+  String getTutorialHint() =>
+      'Elige la sílaba que falta para completar la palabra';
+  @override
   String describeQuestion(Map<String, dynamic> question) {
     final syllables = question['syllables'] as List;
     final hiddenIndex = question['hiddenIndex'] as int;

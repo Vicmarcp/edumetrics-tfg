@@ -36,6 +36,40 @@ class _ComparisonActivityState extends BaseActivityState<ComparisonActivityScree
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Mira estos dos números:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _buildNumberCard(15),
+          const SizedBox(width: 24),
+          const Text('vs',
+              style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 24),
+          _buildNumberCard(8),
+        ]),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: const Text(
+            '15 es MAYOR que 8\nporque 15 es más grande ✓',
+            style: TextStyle(
+                fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  String getTutorialHint() =>
+      '¿El primer número es mayor o menor que el segundo?';
+  @override
   String describeQuestion(Map<String, dynamic> question) {
     return '${question['num1']} vs ${question['num2']}';
   }

@@ -35,6 +35,38 @@ class _SequenceActivityState extends BaseActivityState<SequenceActivityScreen> {
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Mira esta serie de números:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _buildNumberCard('4'),
+          const SizedBox(width: 16),
+          _buildNumberCard('?', isQuestion: true),
+          const SizedBox(width: 16),
+          _buildNumberCard('6'),
+        ]),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: const Text(
+            'El número que falta es 5\nporque va entre 4 y 6: 4, 5, 6 ✓',
+            style: TextStyle(
+                fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  String getTutorialHint() => 'Escribe el número que va en medio';
+  @override
   String describeQuestion(Map<String, dynamic> question) {
     return '${question['num1']}, ?, ${question['num3']}';
   }

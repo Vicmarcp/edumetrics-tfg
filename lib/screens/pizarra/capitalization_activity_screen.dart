@@ -63,6 +63,40 @@ class _CapitalizationActivityState
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Mira esta frase:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Wrap(spacing: 12, children: ['yo', 'soy', 'maria'].map((w) =>
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(color: Colors.deepPurple.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.deepPurple, width: 2)),
+              child: Text(w, style: const TextStyle(fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple)),
+            )).toList()),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: const Text(
+              '"maria" necesita MAYÚSCULA\nporque es un nombre propio ✓\nSe escribe: María',
+              style: TextStyle(fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green), textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
+
+  @override
+  String getTutorialHint() => 'Pulsa la palabra que debe ir con mayúscula';
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final rule = question['rule'] as String;
     final hint = rule == 'inicio'

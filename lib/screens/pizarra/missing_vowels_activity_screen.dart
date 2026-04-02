@@ -127,6 +127,54 @@ class _MissingVowelsActivityState
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Mira esta palabra:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _exampleLetter('G', false),
+          _exampleLetter('_', true),
+          _exampleLetter('T', false),
+          _exampleLetter('O', false),
+        ]),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: const Text('La palabra es GATO\nFalta la vocal A ✓',
+              style: TextStyle(fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green), textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
+
+  Widget _exampleLetter(String letter, bool isHidden) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Container(
+        width: 70, height: 80,
+        decoration: BoxDecoration(
+          color: isHidden ? Colors.orange.withValues(alpha: 0.15) : Colors.blue
+              .withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isHidden ? Colors.orange : Colors.blue,
+              width: isHidden ? 4 : 2),
+        ),
+        child: Center(child: Text(letter, style: TextStyle(fontSize: 44,
+            fontWeight: FontWeight.bold,
+            color: isHidden ? Colors.orange : Colors.blue.shade700))),
+      ),
+    );
+  }
+
+  @override
+  String getTutorialHint() => 'Elige la vocal que falta en la palabra';
+  @override
   String describeQuestion(Map<String, dynamic> question) {
     return '${question['displayWord']} (${question['word']})';
   }

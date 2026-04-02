@@ -79,6 +79,40 @@ class _SyllableCountActivityState
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Mira esta palabra:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          decoration: BoxDecoration(color: Colors.indigo.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.indigo, width: 3)),
+          child: const Text('CASA', style: TextStyle(fontSize: 52,
+              fontWeight: FontWeight.bold,
+              color: Colors.indigo,
+              letterSpacing: 8)),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: const Text(
+              'CA - SA\nTiene 2 sílabas ✓\nDa palmadas: CA 👏 SA 👏',
+              style: TextStyle(fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green), textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
+
+  @override
+  String getTutorialHint() => 'Cuenta las sílabas dando palmadas';
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final word = question['word'] as String;
 

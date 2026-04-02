@@ -69,6 +69,36 @@ class _SentenceOrderActivityState
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Estas palabras están desordenadas:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Wrap(spacing: 8, children: ['bebe', 'gato', 'El', 'agua'].map((w) =>
+            Chip(
+              label: Text(w, style: const TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.bold)),
+              backgroundColor: Colors.indigo.shade50,
+            )).toList()),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: const Text(
+              'Orden correcto:\nEl gato bebe agua ✓\nPulsa las palabras en orden',
+              style: TextStyle(fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green), textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
+
+  @override
+  String getTutorialHint() => 'Pulsa las palabras en el orden correcto';
+  @override
   String describeQuestion(Map<String, dynamic> question) {
     return question['sentence'] as String;
   }

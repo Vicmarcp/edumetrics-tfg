@@ -34,6 +34,42 @@ class _SubtractionActivityState extends BaseActivityState<SubtractionActivityScr
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Mira esta resta:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _buildNumberCard(9, Colors.blue),
+          const SizedBox(width: 16),
+          const Text('−', style: TextStyle(
+              fontSize: 60, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const SizedBox(width: 16),
+          _buildNumberCard(3, Colors.red),
+          const SizedBox(width: 16),
+          const Text('=', style: TextStyle(
+              fontSize: 60, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const SizedBox(width: 16),
+          _buildNumberCard(6, Colors.teal),
+        ]),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: const Text('9 − 3 = 6 ✓\nResta el segundo número al primero',
+              style: TextStyle(fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green), textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
+
+  @override
+  String getTutorialHint() => 'Resta el segundo número al primero';
+  @override
   String describeQuestion(Map<String, dynamic> question) {
     return '${question['num1']} − ${question['num2']}';
   }

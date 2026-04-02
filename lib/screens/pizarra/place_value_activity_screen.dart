@@ -36,6 +36,47 @@ class _PlaceValueActivityState extends BaseActivityState<PlaceValueActivityScree
   }
 
   @override
+  Widget buildTutorialExample() {
+    return Column(
+      children: [
+        const Text('Mira este número:',
+            style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 16),
+        Container(
+          width: 160, height: 160,
+          decoration: BoxDecoration(color: Colors.purple.shade50,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.purple, width: 4)),
+          child: const Center(child: Text('14', style: TextStyle(fontSize: 80,
+              fontWeight: FontWeight.bold,
+              color: Colors.purple))),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12)),
+          child: Column(children: [
+            Text('1 DECENA (el 1 vale 10)', style: TextStyle(fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange.shade700)),
+            const SizedBox(height: 8),
+            const Text('4 UNIDADES', style: TextStyle(
+                fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue)),
+            const SizedBox(height: 8),
+            const Text('14 = 1 decena + 4 unidades ✓', style: TextStyle(
+                fontSize: 20,
+                color: Colors.green,
+                fontWeight: FontWeight.bold)),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  @override
+  String getTutorialHint() => 'Cuenta las decenas o las unidades del número';
+  @override
   String describeQuestion(Map<String, dynamic> question) {
     final askTens = question['askTens'] as bool;
     return '${question['number']}: ¿${askTens ? 'Decenas' : 'Unidades'}?';
