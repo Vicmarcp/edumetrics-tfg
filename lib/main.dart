@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'core/accessibility_service.dart';
 import 'core/app_mode.dart';
 import 'core/inactivity_service.dart';
 import 'firebase_options.dart';
@@ -21,9 +22,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Punto 8: App Check — verifica que las peticiones vienen de la app legítima
   await FirebaseAppCheck.instance.activate(
-    providerWeb: ReCaptchaV3Provider('TU_SITE_KEY_RECAPTCHA'),
+    providerWeb: ReCaptchaV3Provider(''),
   );
 
   runApp(const EduMetricsApp());
@@ -34,44 +34,67 @@ class EduMetricsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Escuchar cambios de tema, fuente y tamaño
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentMode, _) {
-        return MaterialApp(
-          title: 'EduMetrics',
-          debugShowCheckedModeBanner: false,
-          themeMode: currentMode,
+        return ValueListenableBuilder<bool>(
+          valueListenable: AccessibilityService.dyslexicFont,
+          builder: (context, dyslexic, _) {
+            return ValueListenableBuilder<double>(
+              valueListenable: AccessibilityService.fontScale,
+              builder: (context, scale, _) {
+                final fontFamily =
+                dyslexic ? 'OpenDyslexic' : null;
 
-          // Localización español
-          locale: const Locale('es', 'ES'),
-          supportedLocales: const [Locale('es', 'ES')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
+                return MaterialApp(
+                  title: 'EduMetrics',
+                  debugShowCheckedModeBanner: false,
+                  themeMode: currentMode,
 
-          theme: ThemeData(
-            colorSchemeSeed: Colors.deepPurple,
-            useMaterial3: true,
-            brightness: Brightness.light,
-          ),
-          darkTheme: ThemeData(
-            colorSchemeSeed: Colors.deepPurple,
-            useMaterial3: true,
-            brightness: Brightness.dark,
-          ),
+                  locale: const Locale('es', 'ES'),
+                  supportedLocales: const [Locale('es', 'ES')],
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
 
-          // Ruta raíz para redirección desde verificación de email
-          routes: {'/': (_) => const AuthGate()},
-          initialRoute: '/',
+                  theme: ThemeData(
+                    colorSchemeSeed: Colors.deepPurple,
+                    useMaterial3: true,
+                    brightness: Brightness.light,
+                    fontFamily: fontFamily,
+                  ),
+                  darkTheme: ThemeData(
+                    colorSchemeSeed: Colors.deepPurple,
+                    useMaterial3: true,
+                    brightness: Brightness.dark,
+                    fontFamily: fontFamily,
+                  ),
+
+                  builder: (context, child) {
+                    // Aplicar escala de fuente global
+                    return MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        textScaler: TextScaler.linear(scale),
+                      ),
+                      child: child!,
+                    );
+                  },
+
+                  routes: {'/': (_) => const AuthGate()},
+                  initialRoute: '/',
+                );
+              },
+            );
+          },
         );
       },
     );
   }
 }
 
-/// Gestiona sesión, verificación de email y timeout de inactividad.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -88,17 +111,14 @@ class AuthGate extends StatelessWidget {
 
         final user = snapshot.data;
 
-        // No logueado → Login
         if (user == null) {
           return const LoginScreen();
         }
 
-        // Punto 7: Email no verificado → pantalla de verificación
         if (!user.emailVerified) {
           return const EmailVerificationScreen();
         }
 
-        // Punto 11: Envolver en control de inactividad (8 horas)
         final mode = AppModeProvider.suggestMode(context);
         return InactivityWrapper(
           timeout: const Duration(hours: 8),

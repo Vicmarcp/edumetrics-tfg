@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import '../core/accessibility_service.dart';
 import '../core/audit_service.dart';
 import '../main.dart';
 import 'login_screen.dart';
@@ -110,6 +110,100 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 themeNotifier.value =
                 value ? ThemeMode.dark : ThemeMode.light;
               },
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          _SectionHeader(
+              title: 'Accesibilidad', icon: Icons.accessibility_new),
+          Card(
+            child: Column(
+              children: [
+                // Sonidos
+                ValueListenableBuilder<bool>(
+                  valueListenable: AccessibilityService.soundEnabled,
+                  builder: (context, enabled, _) {
+                    return SwitchListTile(
+                      secondary: Icon(
+                        enabled ? Icons.volume_up : Icons.volume_off,
+                        color: enabled ? Colors.blue : Colors.grey,
+                      ),
+                      title: const Text('Sonidos de actividad'),
+                      subtitle: Text(enabled
+                          ? 'Sonido al acertar y fallar'
+                          : 'Sonidos desactivados'),
+                      value: enabled,
+                      onChanged: (value) {
+                        AccessibilityService.soundEnabled.value = value;
+                      },
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+
+                // Fuente dislexia
+                ValueListenableBuilder<bool>(
+                  valueListenable: AccessibilityService.dyslexicFont,
+                  builder: (context, enabled, _) {
+                    return SwitchListTile(
+                      secondary: Icon(
+                        Icons.font_download,
+                        color: enabled ? Colors.purple : Colors.grey,
+                      ),
+                      title: const Text('Fuente para dislexia'),
+                      subtitle: Text(enabled
+                          ? 'OpenDyslexic activada'
+                          : 'Fuente estándar'),
+                      value: enabled,
+                      onChanged: (value) {
+                        AccessibilityService.dyslexicFont.value = value;
+                      },
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+
+                // Tamaño de fuente
+                ValueListenableBuilder<double>(
+                  valueListenable: AccessibilityService.fontScale,
+                  builder: (context, scale, _) {
+                    final label = scale < 0.9
+                        ? 'Pequeño'
+                        : scale > 1.1
+                        ? 'Grande'
+                        : 'Normal';
+                    return ListTile(
+                      leading: const Icon(Icons.text_fields),
+                      title: const Text('Tamaño de texto'),
+                      subtitle: Text('Actual: $label'),
+                      trailing: SizedBox(
+                        width: 200,
+                        child: SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(
+                                value: 'small',
+                                label: Text(
+                                    'A', style: TextStyle(fontSize: 12))),
+                            ButtonSegment(
+                                value: 'normal',
+                                label: Text(
+                                    'A', style: TextStyle(fontSize: 16))),
+                            ButtonSegment(
+                                value: 'large',
+                                label: Text(
+                                    'A', style: TextStyle(fontSize: 20))),
+                          ],
+                          selected: {AccessibilityService.currentFontSizeLabel},
+                          onSelectionChanged: (v) {
+                            AccessibilityService.setFontSize(v.first);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),

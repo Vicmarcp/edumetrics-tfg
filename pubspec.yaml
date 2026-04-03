@@ -39,6 +39,7 @@ dependencies:
   pdf: ^3.11.1
   printing: ^5.13.4
   web: ^1.1.1
+  audioplayers: ^6.1.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -73,6 +74,12 @@ flutter:
   # Agrega esta sección
   assets:
     - assets/avatars/
+    - assets/sounds/
+
+  fonts:
+    - family: OpenDyslexic
+      fonts:
+        - asset: assets/fonts/OpenDyslexic-Regular.otf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

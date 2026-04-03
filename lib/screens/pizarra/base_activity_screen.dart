@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import '../../core/accessibility_service.dart';
 import 'activity_summary_screen.dart';
 
 abstract class BaseActivityScreen extends StatefulWidget {
@@ -134,6 +134,17 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
       showFeedback = true;
       isCorrect = correct;
     });
+    if (correct) {
+      AccessibilityService.playCorrect();
+    } else {
+      AccessibilityService.playError();
+    }
+    // Reproducir sonido de feedback
+    if (correct) {
+      AccessibilityService.playCorrect();
+    } else {
+      AccessibilityService.playError();
+    }
 
     await saveResult(question, userAnswer, correct, timeSeconds);
     await Future.delayed(Duration(milliseconds: correct ? 1500 : 3000));
