@@ -72,6 +72,11 @@ class _SequenceActivityState extends BaseActivityState<SequenceActivityScreen> {
   }
 
   @override
+  String getNarrationText(Map<String, dynamic> question) {
+    return '¿Qué número va entre ${question['num1']} y ${question['num3']}?';
+  }
+
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     return Column(
       mainAxisSize: MainAxisSize.min,

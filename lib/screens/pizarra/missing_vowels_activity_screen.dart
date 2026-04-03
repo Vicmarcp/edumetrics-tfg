@@ -178,6 +178,12 @@ class _MissingVowelsActivityState
   String describeQuestion(Map<String, dynamic> question) {
     return '${question['displayWord']} (${question['word']})';
   }
+
+  @override
+  String getNarrationText(Map<String, dynamic> question) {
+    return '¿Qué vocal falta en la palabra ${question['word']}?';
+  }
+
   @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final displayWord = question['displayWord'] as String;

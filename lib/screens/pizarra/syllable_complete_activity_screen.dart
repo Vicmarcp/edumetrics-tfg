@@ -132,6 +132,20 @@ class _SyllableCompleteActivityState
         .toList();
     return '${parts.join('-')} (${syllables.join('-')})';
   }
+
+  @override
+  String getNarrationText(Map<String, dynamic> question) {
+    final syllables = question['syllables'] as List;
+    final hiddenIndex = question['hiddenIndex'] as int;
+    final visible = syllables
+        .asMap()
+        .entries
+        .where((e) => e.key != hiddenIndex)
+        .map((e) => e.value)
+        .join(', ');
+    return '¿Qué sílaba falta? Las sílabas visibles son: $visible';
+  }
+
   @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final syllables = question['syllables'] as List;

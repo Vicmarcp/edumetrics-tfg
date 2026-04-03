@@ -123,6 +123,15 @@ class _CapitalizationActivityState
         ? 'inicio de frase'
         : 'nombre propio'})';
   }
+
+  @override
+  String getNarrationText(Map<String, dynamic> question) {
+    final rule = question['rule'] as String;
+    return rule == 'inicio'
+        ? '¿Qué palabra va con mayúscula al empezar la frase?'
+        : '¿Qué palabra es un nombre propio?';
+  }
+
   @override
   Widget buildAnswerWidget(Map<String, dynamic> question) {
     final sentence = question['sentence'] as String;

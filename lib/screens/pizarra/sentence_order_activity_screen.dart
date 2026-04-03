@@ -104,6 +104,11 @@ class _SentenceOrderActivityState
   }
 
   @override
+  String getNarrationText(Map<String, dynamic> question) {
+    return 'Ordena las palabras para formar una frase';
+  }
+
+  @override
   void onNewQuestion(Map<String, dynamic> question) {
     _selectedWords = [];
     _availableWords = List<String>.from(question['scrambled']);

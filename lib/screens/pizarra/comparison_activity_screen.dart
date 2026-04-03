@@ -75,6 +75,10 @@ class _ComparisonActivityState extends BaseActivityState<ComparisonActivityScree
   }
 
   @override
+  String getNarrationText(Map<String, dynamic> question) {
+    return '¿${question['num1']} es mayor o menor que ${question['num2']}?';
+  }
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

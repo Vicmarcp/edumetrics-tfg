@@ -34,7 +34,6 @@ class EduMetricsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Escuchar cambios de tema, fuente y tamaño
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentMode, _) {
@@ -43,54 +42,108 @@ class EduMetricsApp extends StatelessWidget {
           builder: (context, dyslexic, _) {
             return ValueListenableBuilder<double>(
               valueListenable: AccessibilityService.fontScale,
-              builder: (context, scale, _) {
-                final fontFamily =
-                dyslexic ? 'OpenDyslexic' : null;
+              builder: (context, scale, _) {eturn ValueListenableBuilder<bool>(
+                  valueListenable: AccessibilityService.highContrast,
+                  builder: (context, highContrast, _) {
+                    final fontFamily = dyslexic ? 'OpenDyslexic' : null;
 
-                return MaterialApp(
-                  title: 'EduMetrics',
-                  debugShowCheckedModeBanner: false,
-                  themeMode: currentMode,
+                    rreturn MaterialApp(
+                      title: 'EduMetrics',
+                      debugShowCheckedModeBanner: false,
+                      themeMode: currentMode,
 
-                  locale: const Locale('es', 'ES'),
-                  supportedLocales: const [Locale('es', 'ES')],
-                  localizationsDelegates: const [
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
+                      locale: const Locale('es', 'ES'),
+                      supportedLocales: const [Locale('es', 'ES')],
+                      localizationsDelegates: const [
+                        GlobalMaterialLocalizations.delegate,
+                        GlobalWidgetsLocalizations.delegate,
+                        GlobalCupertinoLocalizations.delegate,
+                      ],
 
-                  theme: ThemeData(
-                    colorSchemeSeed: Colors.deepPurple,
-                    useMaterial3: true,
-                    brightness: Brightness.light,
-                    fontFamily: fontFamily,
-                  ),
-                  darkTheme: ThemeData(
-                    colorSchemeSeed: Colors.deepPurple,
-                    useMaterial3: true,
-                    brightness: Brightness.dark,
-                    fontFamily: fontFamily,
-                  ),
-
-                  builder: (context, child) {
-                    // Aplicar escala de fuente global
-                    return MediaQuery(
-                      data: MediaQuery.of(context).copyWith(
-                        textScaler: TextScaler.linear(scale),
+                      theme: _buildTheme(
+                        Brightness.light,
+                        fontFamily,
+                        highContrast,
                       ),
-                      child: child!,
+                      darkTheme: _buildTheme(
+                        Brightness.dark,
+                        fontFamily,
+                        highContrast,
+                      ),
+
+                      builder: (context, child) {
+                        return MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            textScaler: TextScaler.linear(scale),
+                          ),
+                          child: child!,
+                        );
+                      },
+
+                      routes: {'/': (_) => const AuthGate()},
+                      initialRoute: '/',
                     );
                   },
-
-                  routes: {'/': (_) => const AuthGate()},
-                  initialRoute: '/',
                 );
               },
             );
           },
         );
       },
+    );
+  }
+
+  ThemeData _buildTheme(Brightness brightness, String? fontFamily,
+      bool highContrast) {
+    final base = ThemeData(
+      colorSchemeSeed: Colors.deepPurple,
+      useMaterial3: true,
+      brightness: brightness,
+      fontFamily: fontFamily,
+    );
+
+    if (!highContrast) return base;
+
+    // Alto contraste: bordes gruesos, textos más pesados
+    return base.copyWith(
+      cardTheme: base.cardTheme.copyWith(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: brightness == Brightness.light
+                ? Colors.black54
+                : Colors.white54,
+            width: 2,
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          side: BorderSide(
+            color: brightness == Brightness.light
+                ? Colors.black45
+                : Colors.white54,
+            width: 2,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(width: 3),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            width: 3,
+            color: brightness == Brightness.light
+                ? Colors.black45
+                : Colors.white54,
+          ),
+        ),
+      ),
+      textTheme: base.textTheme,
     );
   }
 }

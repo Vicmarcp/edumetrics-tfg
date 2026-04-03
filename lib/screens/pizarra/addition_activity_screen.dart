@@ -74,6 +74,12 @@ class _AdditionActivityState extends BaseActivityState<AdditionActivityScreen> {
   String describeQuestion(Map<String, dynamic> question) {
     return '${question['num1']} + ${question['num2']}';
   }
+
+  @override
+  String getNarrationText(Map<String, dynamic> question) {
+    return '¿Cuánto es ${question['num1']} más ${question['num2']}?';
+  }
+
   @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     return Row(

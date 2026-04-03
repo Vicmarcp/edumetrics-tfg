@@ -142,6 +142,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const Divider(height: 1),
 
+                // Narración por voz
+                ValueListenableBuilder<bool>(
+                  valueListenable: AccessibilityService.ttsEnabled,
+                  builder: (context, enabled, _) {
+                    return SwitchListTile(
+                      secondary: Icon(
+                        Icons.record_voice_over,
+                        color: enabled ? Colors.green : Colors.grey,
+                      ),
+                      title: const Text('Narración por voz'),
+                      subtitle: Text(enabled
+                          ? 'Lee las preguntas en voz alta'
+                          : 'Narración desactivada'),
+                      value: enabled,
+                      onChanged: (value) {
+                        AccessibilityService.ttsEnabled.value = value;
+                        if (value) {
+                          AccessibilityService.speak(
+                              'Narración activada');
+                        }
+                      },
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+
                 // Fuente dislexia
                 ValueListenableBuilder<bool>(
                   valueListenable: AccessibilityService.dyslexicFont,
@@ -158,6 +184,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       value: enabled,
                       onChanged: (value) {
                         AccessibilityService.dyslexicFont.value = value;
+                      },
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+
+                // Alto contraste
+                ValueListenableBuilder<bool>(
+                  valueListenable: AccessibilityService.highContrast,
+                  builder: (context, enabled, _) {
+                    return SwitchListTile(
+                      secondary: Icon(
+                        Icons.contrast,
+                        color: enabled ? Colors.amber : Colors.grey,
+                      ),
+                      title: const Text('Alto contraste'),
+                      subtitle: Text(enabled
+                          ? 'Bordes gruesos y texto más visible'
+                          : 'Contraste estándar'),
+                      value: enabled,
+                      onChanged: (value) {
+                        AccessibilityService.highContrast.value = value;
+                      },
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+
+                // Modo daltónico
+                ValueListenableBuilder<bool>(
+                  valueListenable: AccessibilityService.colorblindMode,
+                  builder: (context, enabled, _) {
+                    return SwitchListTile(
+                      secondary: Icon(
+                        Icons.remove_red_eye,
+                        color: enabled ? Colors.teal : Colors.grey,
+                      ),
+                      title: const Text('Modo daltónico'),
+                      subtitle: Text(enabled
+                          ? 'Colores seguros (azul/naranja)'
+                          : 'Colores estándar (verde/rojo)'),
+                      value: enabled,
+                      onChanged: (value) {
+                        AccessibilityService.colorblindMode.value =
+                            value;
                       },
                     );
                   },
@@ -183,18 +254,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           segments: const [
                             ButtonSegment(
                                 value: 'small',
-                                label: Text(
-                                    'A', style: TextStyle(fontSize: 12))),
+                                label: Text('A',
+                                    style: TextStyle(fontSize: 12))),
                             ButtonSegment(
                                 value: 'normal',
-                                label: Text(
-                                    'A', style: TextStyle(fontSize: 16))),
+                                label: Text('A',
+                                    style: TextStyle(fontSize: 16))),
                             ButtonSegment(
                                 value: 'large',
-                                label: Text(
-                                    'A', style: TextStyle(fontSize: 20))),
+                                label: Text('A',
+                                    style: TextStyle(fontSize: 20))),
                           ],
-                          selected: {AccessibilityService.currentFontSizeLabel},
+                          selected: {
+                            AccessibilityService.currentFontSizeLabel
+                          },
                           onSelectionChanged: (v) {
                             AccessibilityService.setFontSize(v.first);
                           },
