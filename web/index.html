@@ -1,36 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+    <!-- Permitimos zoom para accesibilidad (Lighthouse a11y) -->
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+    <!-- SEO -->
+    <meta content="EduMetrics - Sistema de evaluación interactiva para 1º de Educación Primaria mediante actividades en pizarra digital. RGPD compliant, accesible y diseñado para profesores."
+          name="description">
+    <meta content="educación, primaria, evaluación, pizarra digital, matemáticas, lengua, RGPD"
+          name="keywords">
+    <meta content="EduMetrics" name="author">
+    <meta content="index, follow" name="robots">
+
+    <!-- Open Graph -->
+    <meta content="website" property="og:type">
+    <meta content="EduMetrics - Evaluación para Primaria" property="og:title">
+    <meta content="Sistema de evaluación interactiva para 1º de Educación Primaria mediante actividades en pizarra digital."
+          property="og:description">
+    <meta content="https://edumetrics-tfg.web.app" property="og:url">
+    <meta content="https://edumetrics-tfg.web.app/icons/Icon-512.png" property="og:image">
+    <meta content="es_ES" property="og:locale">
+    <meta content="EduMetrics" property="og:site_name">
+
+    <!-- Twitter Card -->
+    <meta content="summary_large_image" name="twitter:card">
+    <meta content="EduMetrics - Evaluación para Primaria" name="twitter:title">
+    <meta content="Sistema de evaluación interactiva para 1º de Educación Primaria."
+          name="twitter:description">
+    <meta content="https://edumetrics-tfg.web.app/icons/Icon-512.png" name="twitter:image">
+
+    <!-- iOS -->
+    <meta content="yes" name="apple-mobile-web-app-capable">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="edumetrics">
+    <meta content="EduMetrics" name="apple-mobile-web-app-title">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon -->
+    <!-- PWA -->
+    <link href="manifest.json" rel="manifest">
+    <meta content="#673AB7" name="theme-color">
+
+    <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>edumetrics</title>
-  <link rel="manifest" href="manifest.json">
+    <title>EduMetrics - Evaluación para Primaria</title>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

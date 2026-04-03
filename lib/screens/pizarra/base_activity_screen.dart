@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../../core/accessibility_service.dart';
+import '../../core/analytics_service.dart';
 import 'activity_summary_screen.dart';
 
 abstract class BaseActivityScreen extends StatefulWidget {
@@ -29,6 +31,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
 
   bool showFeedback = false;
   bool isCorrect = false;
+  bool _processingAnswer = false;
 
   int correctCount = 0;
   final List<int> times = [];
@@ -44,15 +47,30 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   late Map<String, dynamic> _tutorialQuestion;
   bool _tutorialAnswered = false;
   bool _tutorialCorrect = false;
+  bool _isNarrating = false;
+  int _narrateGeneration = 0;
 
   @override
   void initState() {
     super.initState();
     _loadCachedData();
     questions = generateQuestions();
-    // Generar una pregunta extra para la práctica del tutorial
     final extraQuestions = generateQuestions();
     _tutorialQuestion = extraQuestions.first;
+    // Narrar la fase de ejemplo del tutorial tras el primer frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && AccessibilityService.ttsEnabled.value) {
+        AccessibilityService.speak(
+            'Mira el ejemplo de cómo se resuelve este ejercicio');
+      }
+    });
+    AnalyticsService.activityStarted(widget.activityType);
+  }
+
+  @override
+  void dispose() {
+    AccessibilityService.stopSpeaking();
+    super.dispose();
   }
 
   Future<void> _loadCachedData() async {
@@ -92,17 +110,17 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   bool validateAnswer(Map<String, dynamic> question, dynamic userAnswer);
   void onNewQuestion(Map<String, dynamic> question) {}
 
-  /// Widget que muestra un ejemplo resuelto con explicación.
-  /// Cada actividad DEBE implementar esto.
   Widget buildTutorialExample();
-
-  /// Hint mostrado durante la fase de práctica guiada.
-  /// Se puede sobreescribir para dar pistas específicas.
   String getTutorialHint() => '¡Inténtalo tú! Responde como en el ejemplo';
 
-  /// Descripción legible de la pregunta para exportación.
   String describeQuestion(Map<String, dynamic> question) {
     return question['correctAnswer']?.toString() ?? '';
+  }
+
+  /// Texto que se narra en voz alta para la pregunta.
+  /// Cada actividad puede sobreescribir esto.
+  String getNarrationText(Map<String, dynamic> question) {
+    return describeQuestion(question);
   }
 
   // ═══════════════════════════════════════════
@@ -112,16 +130,36 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   void startQuestion() {
     questionStartTime = DateTime.now();
     onNewQuestion(questions[currentQuestion]);
+    _narrateQuestion();
+  }
+
+  Future<void> _narrateQuestion() async {
+    if (!AccessibilityService.ttsEnabled.value || _isNarrating) return;
+    _isNarrating = true;
+    final gen = _narrateGeneration;
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (mounted &&
+        !_showingTutorial &&
+        !showFeedback &&
+        gen == _narrateGeneration) {
+      await AccessibilityService.speak(
+          getNarrationText(questions[currentQuestion]));
+    }
+    _isNarrating = false;
   }
 
   Future<void> handleAnswer(dynamic userAnswer) async {
-    if (showFeedback) return;
+    if (showFeedback || _processingAnswer) return;
 
-// Si estamos en tutorial, no guardar resultado
     if (_showingTutorial) {
       _handleTutorialAnswer(userAnswer);
       return;
     }
+
+    _processingAnswer = true;
+    _narrateGeneration++; // Cancelar narración pendiente
+    await AccessibilityService.stopSpeaking();
+
     final timeSeconds =
         DateTime.now().difference(questionStartTime!).inSeconds;
     final question = questions[currentQuestion];
@@ -134,12 +172,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
       showFeedback = true;
       isCorrect = correct;
     });
-    if (correct) {
-      AccessibilityService.playCorrect();
-    } else {
-      AccessibilityService.playError();
-    }
-    // Reproducir sonido de feedback
+
     if (correct) {
       AccessibilityService.playCorrect();
     } else {
@@ -147,12 +180,36 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     }
 
     await saveResult(question, userAnswer, correct, timeSeconds);
-    await Future.delayed(Duration(milliseconds: correct ? 1500 : 3000));
+
+    // Tiempo mínimo de feedback visible (incluso si TTS falla)
+    final minFeedbackMs = correct ? 1500 : 3000;
+    final feedbackStart = DateTime.now();
+
+    if (AccessibilityService.ttsEnabled.value) {
+      if (correct) {
+        await AccessibilityService.speakAndWait('¡Correcto!');
+      } else {
+        await AccessibilityService.speakAndWait(
+            'Incorrecto. La respuesta correcta es ${question['correctAnswer']}');
+      }
+    }
+
+    final elapsed =
+        DateTime
+            .now()
+            .difference(feedbackStart)
+            .inMilliseconds;
+    if (elapsed < minFeedbackMs) {
+      await Future.delayed(
+          Duration(milliseconds: minFeedbackMs - elapsed));
+    }
 
     if (mounted) {
       setState(() {
         showFeedback = false;
       });
+
+      _processingAnswer = false;
 
       if (currentQuestion + 1 < totalQuestions) {
         setState(() {
@@ -160,22 +217,39 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
         });
         startQuestion();
       } else {
+        if (AccessibilityService.ttsEnabled.value) {
+          await AccessibilityService.speakAndWait(
+              'Actividad terminada. Has acertado $correctCount de $totalQuestions');
+        }
         showSummary();
       }
+    } else {
+      _processingAnswer = false;
     }
   }
 
-  /// Maneja la respuesta de la práctica guiada (NO guarda en Firestore)
-  void _handleTutorialAnswer(dynamic userAnswer) {
+  Future<void> _handleTutorialAnswer(dynamic userAnswer) async {
+    if (_tutorialAnswered) return;
+    await AccessibilityService.stopSpeaking();
     final correct = validateAnswer(_tutorialQuestion, userAnswer);
     setState(() {
       _tutorialAnswered = true;
       _tutorialCorrect = correct;
     });
+
+    if (AccessibilityService.ttsEnabled.value) {
+      if (correct) {
+        await AccessibilityService.speakAndWait(
+            '¡Muy bien! Ya sabes cómo hacerlo');
+      } else {
+        await AccessibilityService.speakAndWait(
+            'La respuesta correcta era ${_tutorialQuestion['correctAnswer']}');
+      }
+    }
   }
 
-  /// Avanza del tutorial a la actividad real
-  void _startActivity() {
+  Future<void> _startActivity() async {
+    await AccessibilityService.stopSpeaking();
     setState(() {
       _showingTutorial = false;
     });
@@ -208,6 +282,13 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   }
 
   void showSummary() {
+    final duration = times.fold<int>(0, (a, b) => a + b);
+    AnalyticsService.activityCompleted(
+      activityType: widget.activityType,
+      correctAnswers: correctCount,
+      totalQuestions: totalQuestions,
+      durationSeconds: duration,
+    );
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => ActivitySummaryScreen(
@@ -217,6 +298,27 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
           timesInSeconds: times,
         ),
       ),
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  //  BOTÓN DE NARRACIÓN
+  // ═══════════════════════════════════════════
+
+  Widget _buildSpeakButton(String text) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: AccessibilityService.ttsEnabled,
+      builder: (context, enabled, _) {
+        if (!enabled) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: TextButton.icon(
+            onPressed: () => AccessibilityService.speak(text),
+            icon: const Icon(Icons.volume_up, size: 24),
+            label: const Text('Repetir', style: TextStyle(fontSize: 16)),
+          ),
+        );
+      },
     );
   }
 
@@ -232,7 +334,6 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     return _buildActivityScreen(context);
   }
 
-  /// Pantalla de tutorial (ejemplo + práctica)
   Widget _buildTutorialScreen(BuildContext context) {
     final colorScheme = Theme
         .of(context)
@@ -243,7 +344,6 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
         title: Text(widget.studentName),
         centerTitle: true,
         actions: [
-          // Botón para saltar tutorial
           TextButton(
             onPressed: _startActivity,
             child: const Text('Saltar ▶'),
@@ -261,12 +361,10 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     );
   }
 
-  /// Fase 1: Ejemplo visual resuelto
   Widget _buildExamplePhase(BuildContext context, ColorScheme colorScheme) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Título
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           decoration: BoxDecoration(
@@ -290,8 +388,6 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
           ),
         ),
         const SizedBox(height: 32),
-
-        // Ejemplo resuelto (cada actividad lo define)
         Card(
           elevation: 4,
           shape:
@@ -303,13 +399,17 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
         ),
         const SizedBox(height: 40),
 
-        // Botón para continuar a la práctica
         FilledButton.icon(
-          onPressed: () {
+          onPressed: () async {
+            await AccessibilityService.stopSpeaking();
             setState(() {
               _tutorialPhase = _TutorialPhase.practice;
               onNewQuestion(_tutorialQuestion);
             });
+            if (AccessibilityService.ttsEnabled.value) {
+              await Future.delayed(const Duration(milliseconds: 300));
+              AccessibilityService.speak(getNarrationText(_tutorialQuestion));
+            }
           },
           icon: const Icon(Icons.arrow_forward, size: 28),
           label: const Text('¡Entendido! Quiero probar',
@@ -325,12 +425,10 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     );
   }
 
-  /// Fase 2: Práctica guiada
   Widget _buildPracticePhase(BuildContext context, ColorScheme colorScheme) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Hint
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
@@ -354,22 +452,20 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
           ),
         ),
         const SizedBox(height: 24),
-
-        // Pregunta (reutiliza los widgets de la actividad)
         if (!_tutorialAnswered) ...[
           buildQuestionWidget(_tutorialQuestion),
           const SizedBox(height: 32),
           buildAnswerWidget(_tutorialQuestion),
         ],
-
-        // Feedback de la práctica
         if (_tutorialAnswered) ...[
           buildQuestionWidget(_tutorialQuestion),
           const SizedBox(height: 24),
           Icon(
             _tutorialCorrect ? Icons.check_circle : Icons.info_outline,
             size: 100,
-            color: _tutorialCorrect ? Colors.green : Colors.orange,
+            color: _tutorialCorrect
+                ? AccessibilityService.correctColor
+                : Colors.orange,
           ),
           const SizedBox(height: 16),
           Text(
@@ -379,7 +475,9 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: _tutorialCorrect ? Colors.green : Colors.orange,
+              color: _tutorialCorrect
+                  ? AccessibilityService.correctColor
+                  : Colors.orange,
             ),
             textAlign: TextAlign.center,
           ),
@@ -399,7 +497,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
             style: FilledButton.styleFrom(
               padding:
               const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-              backgroundColor: Colors.green,
+              backgroundColor: AccessibilityService.correctColor,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
             ),
@@ -409,13 +507,14 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     );
   }
 
-  /// Pantalla de actividad normal
   Widget _buildActivityScreen(BuildContext context) {
     final question = questions[currentQuestion];
 
     return Scaffold(
       backgroundColor: showFeedback
-          ? (isCorrect ? Colors.green.shade100 : Colors.red.shade100)
+          ? (isCorrect
+          ? AccessibilityService.correctColorLight
+          : AccessibilityService.errorColorLight)
           : Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.studentName),
@@ -439,6 +538,8 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Botón de narración
+                _buildSpeakButton(getNarrationText(question)),
                 buildQuestionWidget(question),
                 const SizedBox(height: 32),
                 buildAnswerWidget(question),
@@ -449,7 +550,9 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
                       Icon(
                         isCorrect ? Icons.check_circle : Icons.cancel,
                         size: 100,
-                        color: isCorrect ? Colors.green : Colors.red,
+                        color: isCorrect
+                            ? AccessibilityService.correctColor
+                            : AccessibilityService.errorColor,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -457,7 +560,9 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: isCorrect ? Colors.green : Colors.red,
+                          color: isCorrect
+                              ? AccessibilityService.correctColor
+                              : AccessibilityService.errorColor,
                         ),
                       ),
                       if (!isCorrect) ...[
@@ -468,10 +573,11 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
                           decoration: BoxDecoration(
                             color: Colors.orange.shade50,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.orange, width: 2),
+                            border:
+                            Border.all(color: Colors.orange, width: 2),
                           ),
                           child: Text(
-                            'La respuesta correcta es: ${questions[currentQuestion]['correctAnswer']}',
+                            'La respuesta correcta es: ${question['correctAnswer']}',
                             style: const TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,

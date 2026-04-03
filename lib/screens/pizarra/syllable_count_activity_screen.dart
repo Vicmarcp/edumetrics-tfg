@@ -152,6 +152,12 @@ class _SyllableCountActivityState
   String describeQuestion(Map<String, dynamic> question) {
     return '${question['word']}: ¿cuántas sílabas?';
   }
+
+  @override
+  String getNarrationText(Map<String, dynamic> question) {
+    return '¿Cuántas sílabas tiene la palabra ${question['word']}?';
+  }
+
   @override
   Widget buildAnswerWidget(Map<String, dynamic> question) {
     return Row(

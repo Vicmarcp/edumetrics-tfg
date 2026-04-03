@@ -20,38 +20,216 @@ class _SyllableCompleteActivityState
     extends BaseActivityState<SyllableCompleteActivityScreen> {
   // Palabras divididas en sílabas con la sílaba que falta y opciones
   final List<Map<String, dynamic>> _wordBank = [
-    // Formato: syllables (lista), hiddenIndex (cuál falta), options (3 opciones incluyendo la correcta)
-    {'syllables': ['CA', 'SA'], 'hiddenIndex': 0, 'options': ['CA', 'CO', 'CU']},
-    {'syllables': ['CA', 'SA'], 'hiddenIndex': 1, 'options': ['SA', 'SO', 'SE']},
-    {'syllables': ['ME', 'SA'], 'hiddenIndex': 0, 'options': ['ME', 'MA', 'MO']},
-    {'syllables': ['GA', 'TO'], 'hiddenIndex': 1, 'options': ['TO', 'TA', 'TI']},
-    {'syllables': ['PE', 'RRO'], 'hiddenIndex': 0, 'options': ['PE', 'PA', 'PO']},
-    {'syllables': ['LU', 'NA'], 'hiddenIndex': 1, 'options': ['NA', 'NE', 'NO']},
-    {'syllables': ['PA', 'TO'], 'hiddenIndex': 0, 'options': ['PA', 'PO', 'PU']},
-    {'syllables': ['RA', 'NA'], 'hiddenIndex': 1, 'options': ['NA', 'NI', 'NU']},
-    {'syllables': ['LO', 'BO'], 'hiddenIndex': 0, 'options': ['LO', 'LA', 'LU']},
-    {'syllables': ['NU', 'BE'], 'hiddenIndex': 1, 'options': ['BE', 'BA', 'BI']},
-    {'syllables': ['DA', 'DO'], 'hiddenIndex': 0, 'options': ['DA', 'DE', 'DI']},
-    {'syllables': ['BO', 'CA'], 'hiddenIndex': 1, 'options': ['CA', 'CO', 'CU']},
-    {'syllables': ['MA', 'NO'], 'hiddenIndex': 1, 'options': ['NO', 'NA', 'NE']},
-    {'syllables': ['DE', 'DO'], 'hiddenIndex': 0, 'options': ['DE', 'DA', 'DU']},
-    {'syllables': ['VA', 'CA'], 'hiddenIndex': 0, 'options': ['VA', 'VE', 'VI']},
-    {'syllables': ['MO', 'NO'], 'hiddenIndex': 1, 'options': ['NO', 'NA', 'NI']},
-    {'syllables': ['PE', 'RA'], 'hiddenIndex': 1, 'options': ['RA', 'RO', 'RE']},
-    {'syllables': ['SO', 'PA'], 'hiddenIndex': 0, 'options': ['SO', 'SA', 'SU']},
-    {'syllables': ['CA', 'MA'], 'hiddenIndex': 1, 'options': ['MA', 'ME', 'MO']},
-    {'syllables': ['FO', 'CA'], 'hiddenIndex': 0, 'options': ['FO', 'FA', 'FU']},
-    {'syllables': ['TA', 'ZA'], 'hiddenIndex': 1, 'options': ['ZA', 'ZO', 'ZE']},
-    // 3 sílabas
-    {'syllables': ['CO', 'NE', 'JO'], 'hiddenIndex': 1, 'options': ['NE', 'NA', 'NO']},
-    {'syllables': ['ZA', 'PA', 'TO'], 'hiddenIndex': 0, 'options': ['ZA', 'ZO', 'ZU']},
-    {'syllables': ['CO', 'CI', 'NA'], 'hiddenIndex': 2, 'options': ['NA', 'NE', 'NI']},
-    {'syllables': ['HE', 'LA', 'DO'], 'hiddenIndex': 1, 'options': ['LA', 'LO', 'LE']},
-    {'syllables': ['PA', 'LO', 'MA'], 'hiddenIndex': 2, 'options': ['MA', 'MO', 'ME']},
-    {'syllables': ['TOR', 'TU', 'GA'], 'hiddenIndex': 1, 'options': ['TU', 'TA', 'TO']},
-    {'syllables': ['PI', 'RA', 'TA'], 'hiddenIndex': 0, 'options': ['PI', 'PA', 'PU']},
-    {'syllables': ['CO', 'ME', 'TA'], 'hiddenIndex': 2, 'options': ['TA', 'TO', 'TE']},
-    {'syllables': ['GA', 'LLI', 'NA'], 'hiddenIndex': 1, 'options': ['LLI', 'LLA', 'LLO']},
+    {
+      'syllables': ['CA', 'SA'],
+      'hiddenIndex': 0,
+      'options': ['CA', 'CO', 'CU'],
+      'emoji': '🏠',
+      'hint': 'Donde vivimos'
+    },
+    {
+      'syllables': ['CA', 'SA'],
+      'hiddenIndex': 1,
+      'options': ['SA', 'SO', 'SE'],
+      'emoji': '🏠',
+      'hint': 'Donde vivimos'
+    },
+    {
+      'syllables': ['ME', 'SA'],
+      'hiddenIndex': 0,
+      'options': ['ME', 'MA', 'MO'],
+      'emoji': '🪑',
+      'hint': 'Donde comemos'
+    },
+    {
+      'syllables': ['GA', 'TO'],
+      'hiddenIndex': 1,
+      'options': ['TO', 'TA', 'TI'],
+      'emoji': '🐱',
+      'hint': 'Animal que maúlla'
+    },
+    {
+      'syllables': ['PE', 'RRO'],
+      'hiddenIndex': 0,
+      'options': ['PE', 'PA', 'PO'],
+      'emoji': '🐶',
+      'hint': 'Animal que ladra'
+    },
+    {
+      'syllables': ['LU', 'NA'],
+      'hiddenIndex': 1,
+      'options': ['NA', 'NE', 'NO'],
+      'emoji': '🌙',
+      'hint': 'Brilla de noche'
+    },
+    {
+      'syllables': ['PA', 'TO'],
+      'hiddenIndex': 0,
+      'options': ['PA', 'PO', 'PU'],
+      'emoji': '🦆',
+      'hint': 'Ave que nada'
+    },
+    {
+      'syllables': ['RA', 'NA'],
+      'hiddenIndex': 1,
+      'options': ['NA', 'NI', 'NU'],
+      'emoji': '🐸',
+      'hint': 'Salta y croa'
+    },
+    {
+      'syllables': ['LO', 'BO'],
+      'hiddenIndex': 0,
+      'options': ['LO', 'LA', 'LU'],
+      'emoji': '🐺',
+      'hint': 'Aúlla a la luna'
+    },
+    {
+      'syllables': ['NU', 'BE'],
+      'hiddenIndex': 1,
+      'options': ['BE', 'BA', 'BI'],
+      'emoji': '☁️',
+      'hint': 'Está en el cielo'
+    },
+    {
+      'syllables': ['DA', 'DO'],
+      'hiddenIndex': 0,
+      'options': ['DA', 'DE', 'DI'],
+      'emoji': '🎲',
+      'hint': 'Tiene seis caras'
+    },
+    {
+      'syllables': ['BO', 'CA'],
+      'hiddenIndex': 1,
+      'options': ['CA', 'CO', 'CU'],
+      'emoji': '👄',
+      'hint': 'Sirve para hablar'
+    },
+    {
+      'syllables': ['MA', 'NO'],
+      'hiddenIndex': 1,
+      'options': ['NO', 'NA', 'NE'],
+      'emoji': '✋',
+      'hint': 'Tiene cinco dedos'
+    },
+    {
+      'syllables': ['DE', 'DO'],
+      'hiddenIndex': 0,
+      'options': ['DE', 'DA', 'DU'],
+      'emoji': '👆',
+      'hint': 'Parte de la mano'
+    },
+    {
+      'syllables': ['VA', 'CA'],
+      'hiddenIndex': 0,
+      'options': ['VA', 'VE', 'VI'],
+      'emoji': '🐄',
+      'hint': 'Nos da leche'
+    },
+    {
+      'syllables': ['MO', 'NO'],
+      'hiddenIndex': 1,
+      'options': ['NO', 'NA', 'NI'],
+      'emoji': '🐒',
+      'hint': 'Animal que trepa'
+    },
+    {
+      'syllables': ['PE', 'RA'],
+      'hiddenIndex': 1,
+      'options': ['RA', 'RO', 'RE'],
+      'emoji': '🍐',
+      'hint': 'Fruta verde'
+    },
+    {
+      'syllables': ['SO', 'PA'],
+      'hiddenIndex': 0,
+      'options': ['SO', 'SA', 'SU'],
+      'emoji': '🍲',
+      'hint': 'Comida caliente'
+    },
+    {
+      'syllables': ['CA', 'MA'],
+      'hiddenIndex': 1,
+      'options': ['MA', 'ME', 'MO'],
+      'emoji': '🛏️',
+      'hint': 'Donde dormimos'
+    },
+    {
+      'syllables': ['FO', 'CA'],
+      'hiddenIndex': 0,
+      'options': ['FO', 'FA', 'FU'],
+      'emoji': '🦭',
+      'hint': 'Vive en el mar frío'
+    },
+    {
+      'syllables': ['TA', 'ZA'],
+      'hiddenIndex': 1,
+      'options': ['ZA', 'ZO', 'ZE'],
+      'emoji': '☕',
+      'hint': 'Para beber café'
+    },
+    {
+      'syllables': ['CO', 'NE', 'JO'],
+      'hiddenIndex': 1,
+      'options': ['NE', 'NA', 'NO'],
+      'emoji': '🐰',
+      'hint': 'Orejas largas'
+    },
+    {
+      'syllables': ['ZA', 'PA', 'TO'],
+      'hiddenIndex': 0,
+      'options': ['ZA', 'ZO', 'ZU'],
+      'emoji': '👟',
+      'hint': 'Lo ponemos en el pie'
+    },
+    {
+      'syllables': ['CO', 'CI', 'NA'],
+      'hiddenIndex': 2,
+      'options': ['NA', 'NE', 'NI'],
+      'emoji': '👩‍🍳',
+      'hint': 'Donde cocinamos'
+    },
+    {
+      'syllables': ['HE', 'LA', 'DO'],
+      'hiddenIndex': 1,
+      'options': ['LA', 'LO', 'LE'],
+      'emoji': '🍦',
+      'hint': 'Postre frío'
+    },
+    {
+      'syllables': ['PA', 'LO', 'MA'],
+      'hiddenIndex': 2,
+      'options': ['MA', 'MO', 'ME'],
+      'emoji': '🕊️',
+      'hint': 'Ave blanca'
+    },
+    {
+      'syllables': ['TOR', 'TU', 'GA'],
+      'hiddenIndex': 1,
+      'options': ['TU', 'TA', 'TO'],
+      'emoji': '🐢',
+      'hint': 'Lleva caparazón'
+    },
+    {
+      'syllables': ['PI', 'RA', 'TA'],
+      'hiddenIndex': 0,
+      'options': ['PI', 'PA', 'PU'],
+      'emoji': '🏴‍☠️',
+      'hint': 'Busca tesoros'
+    },
+    {
+      'syllables': ['CO', 'ME', 'TA'],
+      'hiddenIndex': 2,
+      'options': ['TA', 'TO', 'TE'],
+      'emoji': '🪁',
+      'hint': 'Vuela con el viento'
+    },
+    {
+      'syllables': ['GA', 'LLI', 'NA'],
+      'hiddenIndex': 1,
+      'options': ['LLI', 'LLA', 'LLO'],
+      'emoji': '🐔',
+      'hint': 'Pone huevos'
+    },
   ];
 
   @override
@@ -61,13 +239,14 @@ class _SyllableCompleteActivityState
       ..shuffle(random);
 
     return shuffled.take(totalQuestions).map((item) {
-      // Barajar las opciones
       final options = List<String>.from(item['options'])..shuffle(random);
       return {
         'syllables': item['syllables'],
         'hiddenIndex': item['hiddenIndex'],
         'options': options,
         'correctAnswer': (item['syllables'] as List)[item['hiddenIndex']],
+        'emoji': item['emoji'],
+        'hint': item['hint'],
       };
     }).toList();
   }
@@ -78,6 +257,24 @@ class _SyllableCompleteActivityState
       children: [
         const Text('Mira esta palabra incompleta:',
             style: TextStyle(fontSize: 22, color: Colors.grey)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.amber, width: 2),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('🐱', style: TextStyle(fontSize: 40)),
+              SizedBox(width: 12),
+              Text('Animal que maúlla',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           _exampleSyllable('GA', false),
@@ -132,19 +329,48 @@ class _SyllableCompleteActivityState
         .toList();
     return '${parts.join('-')} (${syllables.join('-')})';
   }
+
+  @override
+  String getNarrationText(Map<String, dynamic> question) {
+    final hint = question['hint'] as String? ?? '';
+    return '¿Qué sílaba falta? Pista: $hint';
+  }
+
   @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final syllables = question['syllables'] as List;
     final hiddenIndex = question['hiddenIndex'] as int;
+    final emoji = question['emoji'] as String? ?? '';
+    final hint = question['hint'] as String? ?? '';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(
-          '¿Qué sílaba falta?',
-          style: TextStyle(fontSize: 26, color: Colors.grey),
+        // Pista con emoji
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.amber, width: 2),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 40)),
+              const SizedBox(width: 12),
+              Text(hint,
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87)),
+            ],
+          ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+        const Text('¿Qué sílaba falta?',
+            style: TextStyle(fontSize: 26, color: Colors.grey)),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: syllables.asMap().entries.map<Widget>((entry) {
@@ -154,7 +380,8 @@ class _SyllableCompleteActivityState
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Container(
                 constraints: const BoxConstraints(minWidth: 90),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: isHidden
                       ? Colors.amber.withValues(alpha: 0.15)
@@ -171,7 +398,9 @@ class _SyllableCompleteActivityState
                     style: TextStyle(
                       fontSize: 52,
                       fontWeight: FontWeight.bold,
-                      color: isHidden ? Colors.amber.shade700 : Colors.green.shade700,
+                      color: isHidden
+                          ? Colors.amber.shade700
+                          : Colors.green.shade700,
                     ),
                   ),
                 ),

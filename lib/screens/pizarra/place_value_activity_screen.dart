@@ -83,6 +83,14 @@ class _PlaceValueActivityState extends BaseActivityState<PlaceValueActivityScree
   }
 
   @override
+  String getNarrationText(Map<String, dynamic> question) {
+    final askTens = question['askTens'] as bool;
+    return '¿Cuántas ${askTens
+        ? 'decenas'
+        : 'unidades'} tiene el número ${question['number']}?';
+  }
+
+  @override
   Widget buildQuestionWidget(Map<String, dynamic> question) {
     final number = question['number'] as int;
     final askTens = question['askTens'] as bool;

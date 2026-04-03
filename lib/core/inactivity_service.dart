@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../screens/login_screen.dart';
+import 'ui_helpers.dart';
 
 /// Controla la inactividad del usuario y cierra sesión automáticamente
 /// tras un periodo configurable. Diseñado para pizarras compartidas
@@ -78,13 +79,10 @@ class _InactivityWrapperState extends State<InactivityWrapper>
             (route) => false,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Sesión cerrada por inactividad. Inicia sesión de nuevo.'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 5),
-        ),
+      AppSnackbar.warning(
+        context,
+        'Sesión cerrada por inactividad. Inicia sesión de nuevo.',
+        duration: const Duration(seconds: 5),
       );
     }
   }

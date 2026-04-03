@@ -23,26 +23,26 @@ class _SentenceOrderActivityState
 
   // Frases sencillas para 1º-2º primaria
   final List<String> _sentenceBank = [
-    'El gato bebe agua',
-    'Mi perro es grande',
-    'La luna sale hoy',
-    'El sol da calor',
-    'Yo como pan',
-    'La rana salta mucho',
-    'Mi casa es roja',
-    'El pato nada bien',
-    'La vaca come hierba',
-    'Yo tengo un gato',
-    'El lobo vive solo',
-    'La mesa es azul',
-    'Mi mama me quiere',
-    'El mono sube alto',
-    'La flor es bonita',
-    'Yo leo un libro',
-    'El tren va rapido',
-    'La sopa esta rica',
-    'Mi papa cocina bien',
-    'El oso duerme mucho',
+    'El gato bebe agua.',
+    'Mi perro es grande.',
+    'La luna sale hoy.',
+    'El sol da calor.',
+    'Yo como pan.',
+    'La rana salta mucho.',
+    'Mi casa es roja.',
+    'El pato nada bien.',
+    'La vaca come hierba.',
+    'Yo tengo un gato.',
+    'El lobo vive solo.',
+    'La mesa es azul.',
+    'Mi mama me quiere.',
+    'El mono sube alto.',
+    'La flor es bonita.',
+    'Yo leo un libro.',
+    'El tren va rapido.',
+    'La sopa esta rica.',
+    'Mi papa cocina bien.',
+    'El oso duerme mucho.',
   ];
 
   @override
@@ -101,6 +101,11 @@ class _SentenceOrderActivityState
   @override
   String describeQuestion(Map<String, dynamic> question) {
     return question['sentence'] as String;
+  }
+
+  @override
+  String getNarrationText(Map<String, dynamic> question) {
+    return 'Ordena las palabras para formar una frase';
   }
 
   @override

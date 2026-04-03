@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/audit_service.dart';
+import '../../core/ui_helpers.dart';
 
 class EditStudentScreen extends StatefulWidget {
   final String studentId;
@@ -59,36 +60,26 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
     final name = _sanitizeName(_nameController.text);
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor introduce el nombre')),
-      );
+      AppSnackbar.error(context, 'Por favor introduce el nombre');
       return;
     }
 
     if (name.length > 50) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('El nombre no puede superar los 50 caracteres')),
-      );
+      AppSnackbar.error(
+          context, 'El nombre no puede superar los 50 caracteres');
       return;
     }
 
     if (!_nameRegex.hasMatch(name)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'El nombre solo puede contener letras, espacios y guiones'),
-          backgroundColor: Colors.red,
-        ),
+      AppSnackbar.error(
+        context,
+        'El nombre solo puede contener letras, espacios y guiones',
       );
       return;
     }
 
     if (_selectedClass == null || _selectedAvatarId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Por favor completa todos los campos')),
-      );
+      AppSnackbar.error(context, 'Por favor completa todos los campos');
       return;
     }
 
@@ -110,18 +101,14 @@ class _EditStudentScreenState extends State<EditStudentScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Alumno actualizado correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackbar.success(context, 'Alumno actualizado correctamente');
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al actualizar el alumno. Inténtalo de nuevo.'), backgroundColor: Colors.red),
+        AppSnackbar.error(
+          context,
+          'Error al actualizar el alumno. Inténtalo de nuevo.',
         );
       }
     } finally {

@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/accessibility_service.dart';
 import '../../core/export_service.dart';
+import '../../core/ui_helpers.dart';
 
 class ClassAnalyticsScreen extends StatefulWidget {
   final String schoolId;
@@ -213,7 +215,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListSkeleton(itemCount: 5);
     }
 
     if (_errorMessage != null) {
@@ -455,11 +457,8 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
         ),
         borderData: FlBorderData(show: false),
         barGroups: results.asMap().entries.map((entry) {
-          final color = entry.value.percent >= 70
-              ? Colors.green
-              : entry.value.percent >= 50
-              ? Colors.orange
-              : Colors.red;
+          final color = AccessibilityService.chartBarColor(
+              entry.value.percent.toDouble());
           return BarChartGroupData(
             x: entry.key,
             barRods: [
@@ -553,11 +552,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
           final correct = results.where((r) => r).length;
           final percent =
           results.isEmpty ? 0.0 : correct * 100 / results.length;
-          final color = percent >= 70
-              ? Colors.green
-              : percent >= 50
-              ? Colors.orange
-              : Colors.red;
+          final color = AccessibilityService.chartBarColor(percent.toDouble());
           return BarChartGroupData(
             x: entry.key,
             barRods: [

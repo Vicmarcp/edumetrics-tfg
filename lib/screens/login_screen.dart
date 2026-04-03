@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../core/analytics_service.dart';
 import '../core/app_mode.dart';
+import '../core/ui_helpers.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -54,17 +56,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (_emailError.isNotEmpty || _passwordError.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor corrige los errores')),
-      );
+      AppSnackbar.error(context, 'Por favor corrige los errores');
       return;
     }
 
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Por favor completa todos los campos')),
-      );
+      AppSnackbar.error(context, 'Por favor completa todos los campos');
       return;
     }
 
@@ -81,6 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showModeSelector();
       }
     } on FirebaseAuthException catch (e) {
+      AnalyticsService.loginError(e.code);
       String errorMessage = 'Error al iniciar sesión';
 
       if (e.code == 'user-not-found') {
@@ -101,21 +99,19 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: e.code == 'too-many-requests'
-                ? const Duration(seconds: 6)
-                : const Duration(seconds: 4),
-            action: e.code != 'too-many-requests'
-                ? SnackBarAction(
-              label: '¿Olvidaste tu contraseña?',
-              textColor: Colors.white,
-              onPressed: _showPasswordRecovery,
-            )
-                : null,
-          ),
+        AppSnackbar.error(
+          context,
+          errorMessage,
+          duration: e.code == 'too-many-requests'
+              ? const Duration(seconds: 6)
+              : const Duration(seconds: 4),
+          action: e.code != 'too-many-requests'
+              ? SnackBarAction(
+            label: '¿Olvidaste tu contraseña?',
+            textColor: Colors.white,
+            onPressed: _showPasswordRecovery,
+          )
+              : null,
         );
       }
     } finally {
@@ -140,10 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () async {
               if (_emailController.text.isEmpty) {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Introduce tu email primero')),
-                );
+                AppSnackbar.error(context, 'Introduce tu email primero');
                 return;
               }
 
@@ -153,17 +146,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
                 if (!context.mounted) return;
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Email de recuperación enviado'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                AppSnackbar.success(context, 'Email de recuperación enviado');
               } catch (e) {
                 if (!context.mounted) return;
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error al enviar el email. Inténtalo de nuevo.'), backgroundColor: Colors.red),
+                AppSnackbar.error(
+                  context,
+                  'Error al enviar el email. Inténtalo de nuevo.',
                 );
               }
             },

@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -5,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/accessibility_service.dart';
+import 'core/analytics_service.dart';
 import 'core/app_mode.dart';
+import 'core/connectivity_service.dart';
 import 'core/inactivity_service.dart';
 import 'firebase_options.dart';
 import 'screens/email_verification_screen.dart';
@@ -22,9 +25,15 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await FirebaseAppCheck.instance.activate(
-    providerWeb: ReCaptchaV3Provider(''),
-  );
+  try {
+    await FirebaseAppCheck.instance.activate(
+      providerWeb: ReCaptchaV3Provider(
+          '6Ld53JMsAAAAALhBVb4aPtHr01xeBxjqFmbmnI4M'),
+    );
+    await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+    ConnectivityService.initialize();
+  } catch (_) {}
+
 
   runApp(const EduMetricsApp());
 }
@@ -34,7 +43,6 @@ class EduMetricsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Escuchar cambios de tema, fuente y tamaño
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (context, currentMode, _) {
@@ -44,53 +52,111 @@ class EduMetricsApp extends StatelessWidget {
             return ValueListenableBuilder<double>(
               valueListenable: AccessibilityService.fontScale,
               builder: (context, scale, _) {
-                final fontFamily =
-                dyslexic ? 'OpenDyslexic' : null;
+                return ValueListenableBuilder<bool>(
+                  valueListenable: AccessibilityService.highContrast,
+                  builder: (context, highContrast, _) {
+                    final fontFamily = dyslexic ? 'OpenDyslexic' : null;
 
-                return MaterialApp(
-                  title: 'EduMetrics',
-                  debugShowCheckedModeBanner: false,
-                  themeMode: currentMode,
+                    return MaterialApp(
+                      title: 'EduMetrics',
+                      debugShowCheckedModeBanner: false,
+                      navigatorObservers: [AnalyticsService.observer],
+                      themeMode: currentMode,
 
-                  locale: const Locale('es', 'ES'),
-                  supportedLocales: const [Locale('es', 'ES')],
-                  localizationsDelegates: const [
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
+                      locale: const Locale('es', 'ES'),
+                      supportedLocales: const [Locale('es', 'ES')],
+                      localizationsDelegates: const [
+                        GlobalMaterialLocalizations.delegate,
+                        GlobalWidgetsLocalizations.delegate,
+                        GlobalCupertinoLocalizations.delegate,
+                      ],
 
-                  theme: ThemeData(
-                    colorSchemeSeed: Colors.deepPurple,
-                    useMaterial3: true,
-                    brightness: Brightness.light,
-                    fontFamily: fontFamily,
-                  ),
-                  darkTheme: ThemeData(
-                    colorSchemeSeed: Colors.deepPurple,
-                    useMaterial3: true,
-                    brightness: Brightness.dark,
-                    fontFamily: fontFamily,
-                  ),
-
-                  builder: (context, child) {
-                    // Aplicar escala de fuente global
-                    return MediaQuery(
-                      data: MediaQuery.of(context).copyWith(
-                        textScaler: TextScaler.linear(scale),
+                      theme: _buildTheme(
+                        Brightness.light,
+                        fontFamily,
+                        highContrast,
                       ),
-                      child: child!,
+                      darkTheme: _buildTheme(
+                        Brightness.dark,
+                        fontFamily,
+                        highContrast,
+                      ),
+
+                      builder: (context, child) {
+                        return MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            textScaler: TextScaler.linear(scale),
+                          ),
+                          child: child!,
+                        );
+                      },
+
+                      initialRoute: '/',
+                      routes: {
+                        '/': (_) => const ConnectivityBanner(child: AuthGate()),
+                      },
                     );
                   },
-
-                  routes: {'/': (_) => const AuthGate()},
-                  initialRoute: '/',
                 );
               },
             );
           },
         );
       },
+    );
+  }
+
+  ThemeData _buildTheme(Brightness brightness, String? fontFamily,
+      bool highContrast) {
+    final base = ThemeData(
+      colorSchemeSeed: Colors.deepPurple,
+      useMaterial3: true,
+      brightness: brightness,
+      fontFamily: fontFamily,
+    );
+
+    if (!highContrast) return base;
+
+    // Alto contraste: bordes gruesos, textos más pesados
+    return base.copyWith(
+      cardTheme: base.cardTheme.copyWith(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: brightness == Brightness.light
+                ? Colors.black54
+                : Colors.white54,
+            width: 2,
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          side: BorderSide(
+            color: brightness == Brightness.light
+                ? Colors.black45
+                : Colors.white54,
+            width: 2,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(width: 3),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            width: 3,
+            color: brightness == Brightness.light
+                ? Colors.black45
+                : Colors.white54,
+          ),
+        ),
+      ),
+      textTheme: base.textTheme,
     );
   }
 }

@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/accessibility_service.dart';
 import '../../core/export_service.dart';
+import '../../core/ui_helpers.dart';
 
 class StudentAnalyticsScreen extends StatefulWidget {
   final String studentId;
@@ -43,18 +45,6 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     'syllable_complete': 'Comp. Síl.',
   };
 
-  static const List<Color> activityColors = [
-    Colors.blue,
-    Colors.green,
-    Colors.orange,
-    Colors.purple,
-    Colors.red,
-    Colors.teal,
-    Colors.indigo,
-    Colors.cyan,
-    Colors.deepPurple,
-    Colors.amber,
-  ];
 
   @override
   void initState() {
@@ -211,7 +201,16 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          LoadingSkeleton(height: 80),
+          SizedBox(height: 16),
+          LoadingSkeleton(height: 250),
+          SizedBox(height: 16),
+          LoadingSkeleton(height: 250),
+        ],
+      );
     }
 
     if (_errorMessage != null) {
@@ -462,7 +461,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             barRods: [
               BarChartRodData(
                 toY: percent,
-                color: activityColors[colorIdx % activityColors.length],
+                color: AccessibilityService.chartColors[colorIdx %
+                    AccessibilityService.chartColors.length],
                 width: 22,
                 borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(6)),
@@ -648,7 +648,8 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
             barRods: [
               BarChartRodData(
                 toY: avg,
-                color: activityColors[colorIdx % activityColors.length],
+                color: AccessibilityService.chartColors[colorIdx %
+                    AccessibilityService.chartColors.length],
                 width: 22,
                 borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(6)),

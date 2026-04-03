@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/audit_service.dart';
+import '../../core/ui_helpers.dart';
 
 class AddStudentScreen extends StatefulWidget {
   const AddStudentScreen({super.key});
@@ -42,12 +43,9 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
   Future<void> _saveStudent() async {
     if (!_consentChecked) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Debes confirmar que se dispone del consentimiento parental'),
-          backgroundColor: Colors.red,
-        ),
+      AppSnackbar.error(
+        context,
+        'Debes confirmar que se dispone del consentimiento parental',
       );
       return;
     }
@@ -55,43 +53,31 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
     final name = _sanitizeName(_nameController.text);
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Por favor introduce el nombre del alumno')),
-      );
+      AppSnackbar.error(context, 'Por favor introduce el nombre del alumno');
       return;
     }
 
     if (name.length > 50) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('El nombre no puede superar los 50 caracteres')),
-      );
+      AppSnackbar.error(
+          context, 'El nombre no puede superar los 50 caracteres');
       return;
     }
 
     if (!_nameRegex.hasMatch(name)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'El nombre solo puede contener letras, espacios y guiones'),
-          backgroundColor: Colors.red,
-        ),
+      AppSnackbar.error(
+        context,
+        'El nombre solo puede contener letras, espacios y guiones',
       );
       return;
     }
 
     if (_selectedClass == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona una clase')),
-      );
+      AppSnackbar.error(context, 'Por favor selecciona una clase');
       return;
     }
 
     if (_selectedAvatarId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona un avatar')),
-      );
+      AppSnackbar.error(context, 'Por favor selecciona un avatar');
       return;
     }
 
@@ -101,12 +87,8 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Sesión no válida. Inicia sesión de nuevo.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          AppSnackbar.error(
+              context, 'Sesión no válida. Inicia sesión de nuevo.');
         }
         return;
       }
@@ -120,13 +102,25 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
 
       if (schoolId == null || schoolId.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Tu cuenta no tiene un centro asignado. Contacta con el administrador.'),
-              backgroundColor: Colors.red,
-            ),
+          AppSnackbar.error(
+            context,
+            'Tu cuenta no tiene un centro asignado. Contacta con el administrador.',
           );
+        }
+        return;
+      }
+
+      // Validar límite de 300 alumnos por centro
+      final existingCount = await FirebaseFirestore.instance
+          .collection('students')
+          .where('schoolId', isEqualTo: schoolId)
+          .count()
+          .get();
+
+      if ((existingCount.count ?? 0) >= 300) {
+        if (mounted) {
+          AppSnackbar.error(context,
+              'Límite de 300 alumnos alcanzado para este centro');
         }
         return;
       }
@@ -146,20 +140,14 @@ class _AddStudentScreenState extends State<AddStudentScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Alumno creado correctamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackbar.success(context, 'Alumno creado correctamente');
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error al crear el alumno. Inténtalo de nuevo.'),
-              backgroundColor: Colors.red),
+        AppSnackbar.error(
+          context,
+          'Error al crear el alumno. Inténtalo de nuevo.',
         );
       }
     } finally {
