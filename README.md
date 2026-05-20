@@ -1,4 +1,5 @@
 # EduMetrics
+![CI](https://github.com/Vicmarcp/edumetrics-tfg/actions/workflows/ci.yml/badge.svg)
 
 **Sistema de evaluación interactiva para Educación Primaria**
 
