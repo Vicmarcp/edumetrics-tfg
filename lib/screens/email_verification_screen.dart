@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../core/ui_helpers.dart';
 import 'login_screen.dart';
 
 /// Pantalla que bloquea el acceso hasta que el usuario verifique su email.
@@ -42,22 +43,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       await _auth.currentUser?.sendEmailVerification();
       if (mounted) {
         setState(() => _emailSent = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                'Email de verificación enviado a ${_auth.currentUser?.email}'),
-            backgroundColor: Colors.green,
-          ),
+        AppSnackbar.success(
+          context,
+          'Email de verificación enviado a ${_auth.currentUser?.email}',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al enviar el email de verificación'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackbar.error(context, 'Error al enviar el email de verificación');
       }
     }
   }

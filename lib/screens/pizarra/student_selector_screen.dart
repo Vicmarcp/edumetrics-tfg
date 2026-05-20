@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/ui_helpers.dart';
 import 'addition_activity_screen.dart';
 import 'capitalization_activity_screen.dart';
 import 'comparison_activity_screen.dart';
@@ -63,7 +64,7 @@ class _StudentSelectorScreenState extends State<StudentSelectorScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Selecciona un alumno'), centerTitle: true),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const ListSkeleton(itemCount: 5),
       );
     }
 
@@ -122,7 +123,7 @@ class _StudentSelectorScreenState extends State<StudentSelectorScreen> {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ListSkeleton(itemCount: 5);
           }
 
           final students = snapshot.data?.docs ?? [];

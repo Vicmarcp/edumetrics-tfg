@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/accessibility_service.dart';
+import '../../core/analytics_service.dart';
 import 'activity_summary_screen.dart';
 
 abstract class BaseActivityScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
 
   bool showFeedback = false;
   bool isCorrect = false;
+  bool _processingAnswer = false;
 
   int correctCount = 0;
   final List<int> times = [];
@@ -46,6 +48,7 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   bool _tutorialAnswered = false;
   bool _tutorialCorrect = false;
   bool _isNarrating = false;
+  int _narrateGeneration = 0;
 
   @override
   void initState() {
@@ -54,6 +57,14 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
     questions = generateQuestions();
     final extraQuestions = generateQuestions();
     _tutorialQuestion = extraQuestions.first;
+    // Narrar la fase de ejemplo del tutorial tras el primer frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && AccessibilityService.ttsEnabled.value) {
+        AccessibilityService.speak(
+            'Mira el ejemplo de cómo se resuelve este ejercicio');
+      }
+    });
+    AnalyticsService.activityStarted(widget.activityType);
   }
 
   @override
@@ -125,8 +136,12 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   Future<void> _narrateQuestion() async {
     if (!AccessibilityService.ttsEnabled.value || _isNarrating) return;
     _isNarrating = true;
+    final gen = _narrateGeneration;
     await Future.delayed(const Duration(milliseconds: 300));
-    if (mounted && !_showingTutorial && !showFeedback) {
+    if (mounted &&
+        !_showingTutorial &&
+        !showFeedback &&
+        gen == _narrateGeneration) {
       await AccessibilityService.speak(
           getNarrationText(questions[currentQuestion]));
     }
@@ -134,13 +149,15 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   }
 
   Future<void> handleAnswer(dynamic userAnswer) async {
-    if (showFeedback) return;
+    if (showFeedback || _processingAnswer) return;
 
     if (_showingTutorial) {
       _handleTutorialAnswer(userAnswer);
       return;
     }
 
+    _processingAnswer = true;
+    _narrateGeneration++; // Cancelar narración pendiente
     await AccessibilityService.stopSpeaking();
 
     final timeSeconds =
@@ -164,6 +181,10 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
 
     await saveResult(question, userAnswer, correct, timeSeconds);
 
+    // Tiempo mínimo de feedback visible (incluso si TTS falla)
+    final minFeedbackMs = correct ? 1500 : 3000;
+    final feedbackStart = DateTime.now();
+
     if (AccessibilityService.ttsEnabled.value) {
       if (correct) {
         await AccessibilityService.speakAndWait('¡Correcto!');
@@ -171,15 +192,24 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
         await AccessibilityService.speakAndWait(
             'Incorrecto. La respuesta correcta es ${question['correctAnswer']}');
       }
-      await Future.delayed(const Duration(milliseconds: 400));
-    } else {
-      await Future.delayed(Duration(milliseconds: correct ? 1500 : 3000));
+    }
+
+    final elapsed =
+        DateTime
+            .now()
+            .difference(feedbackStart)
+            .inMilliseconds;
+    if (elapsed < minFeedbackMs) {
+      await Future.delayed(
+          Duration(milliseconds: minFeedbackMs - elapsed));
     }
 
     if (mounted) {
       setState(() {
         showFeedback = false;
       });
+
+      _processingAnswer = false;
 
       if (currentQuestion + 1 < totalQuestions) {
         setState(() {
@@ -193,10 +223,13 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
         }
         showSummary();
       }
+    } else {
+      _processingAnswer = false;
     }
   }
 
   Future<void> _handleTutorialAnswer(dynamic userAnswer) async {
+    if (_tutorialAnswered) return;
     await AccessibilityService.stopSpeaking();
     final correct = validateAnswer(_tutorialQuestion, userAnswer);
     setState(() {
@@ -249,6 +282,13 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
   }
 
   void showSummary() {
+    final duration = times.fold<int>(0, (a, b) => a + b);
+    AnalyticsService.activityCompleted(
+      activityType: widget.activityType,
+      correctAnswers: correctCount,
+      totalQuestions: totalQuestions,
+      durationSeconds: duration,
+    );
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => ActivitySummaryScreen(

@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -5,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/accessibility_service.dart';
+import 'core/analytics_service.dart';
 import 'core/app_mode.dart';
+import 'core/connectivity_service.dart';
 import 'core/inactivity_service.dart';
 import 'firebase_options.dart';
 import 'screens/email_verification_screen.dart';
@@ -22,9 +25,15 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await FirebaseAppCheck.instance.activate(
-    providerWeb: ReCaptchaV3Provider(''),
-  );
+  try {
+    await FirebaseAppCheck.instance.activate(
+      providerWeb: ReCaptchaV3Provider(
+          '6Ld53JMsAAAAALhBVb4aPtHr01xeBxjqFmbmnI4M'),
+    );
+    await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+    ConnectivityService.initialize();
+  } catch (_) {}
+
 
   runApp(const EduMetricsApp());
 }
@@ -42,14 +51,16 @@ class EduMetricsApp extends StatelessWidget {
           builder: (context, dyslexic, _) {
             return ValueListenableBuilder<double>(
               valueListenable: AccessibilityService.fontScale,
-              builder: (context, scale, _) {eturn ValueListenableBuilder<bool>(
+              builder: (context, scale, _) {
+                return ValueListenableBuilder<bool>(
                   valueListenable: AccessibilityService.highContrast,
                   builder: (context, highContrast, _) {
                     final fontFamily = dyslexic ? 'OpenDyslexic' : null;
 
-                    rreturn MaterialApp(
+                    return MaterialApp(
                       title: 'EduMetrics',
                       debugShowCheckedModeBanner: false,
+                      navigatorObservers: [AnalyticsService.observer],
                       themeMode: currentMode,
 
                       locale: const Locale('es', 'ES'),
@@ -80,8 +91,10 @@ class EduMetricsApp extends StatelessWidget {
                         );
                       },
 
-                      routes: {'/': (_) => const AuthGate()},
                       initialRoute: '/',
+                      routes: {
+                        '/': (_) => const ConnectivityBanner(child: AuthGate()),
+                      },
                     );
                   },
                 );

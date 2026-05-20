@@ -1,11 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
 import '../core/accessibility_service.dart';
 import '../core/audit_service.dart';
+import '../core/backup_service.dart';
+import '../core/demo_data_screen.dart';
+import '../core/ui_helpers.dart';
 import '../main.dart';
+import 'legal_notice_screen.dart';
 import 'login_screen.dart';
 import 'privacy_policy_screen.dart';
+import 'terms_of_use_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -55,7 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ListSkeleton(itemCount: 5)
           : ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -357,6 +364,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: Colors.red),
                   onTap: () => _showDeleteAccountDialog(context),
                 ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.cloud_download, color: Colors.blue),
+                  title: const Text('Descargar backup del centro'),
+                  subtitle: const Text(
+                      'Exporta todos los datos en JSON (RGPD Art. 20)'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) =>
+                          AlertDialog(
+                            title: const Text('Descargar backup'),
+                            content: const Text(
+                                'Se generará un archivo JSON con todos los alumnos '
+                                    'y resultados de tu centro. Custódialo con cuidado: '
+                                    'contiene datos personales protegidos por RGPD.'),
+                            actions: [
+                              TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancelar')),
+                              FilledButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, true),
+                                  child: const Text('Descargar')),
+                            ],
+                          ),
+                    );
+                    if (confirm != true || !context.mounted) return;
+
+                    final result = await BackupService.exportFullBackup();
+                    if (!context.mounted) return;
+                    if (result.startsWith('OK')) {
+                      AppSnackbar.success(context, 'Backup descargado');
+                    } else {
+                      AppSnackbar.error(context, result);
+                    }
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.gavel),
+                  title: const Text('Aviso legal'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const LegalNoticeScreen()),
+                      ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.description),
+                  title: const Text('Términos de uso'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () =>
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const TermsOfUseScreen()),
+                      ),
+                ),
               ],
             ),
           ),
@@ -393,6 +464,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 TextStyle(fontSize: 12, color: Colors.grey[500])),
           ),
           const SizedBox(height: 16),
+          const SizedBox(height: 24),
+
+          _SectionHeader(title: 'Desarrollo', icon: Icons.code),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.science, color: Colors.purple),
+              title: const Text('Datos de demo'),
+              subtitle: const Text('Generar/eliminar datos para pruebas'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () =>
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DemoDataScreen()),
+                  ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          _SectionHeader(title: 'Acerca de', icon: Icons.info_outline),
+          Card(
+            child: FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final version = snapshot.hasData
+                    ? '${snapshot.data!.version} (build ${snapshot.data!
+                    .buildNumber})'
+                    : 'Cargando...';
+                return Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.numbers),
+                      title: const Text('Versión'),
+                      subtitle: Text(version),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.school),
+                      title: const Text('EduMetrics'),
+                      subtitle: const Text(
+                          'Sistema de evaluación para Educación Primaria'),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.code),
+                      title: const Text('Tecnologías'),
+                      subtitle: const Text(
+                          'Flutter Web · Firebase · Material Design 3'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -504,12 +629,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (oldResults.docs.isEmpty) {
         if (context.mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-              Text('No hay resultados anteriores al periodo seleccionado'),
-              backgroundColor: Colors.blue,
-            ),
+          AppSnackbar.info(
+            context,
+            'No hay resultados anteriores al periodo seleccionado',
           );
         }
         return;
@@ -544,20 +666,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '${oldResults.docs.length} resultados antiguos eliminados'),
-            backgroundColor: Colors.green,
-          ),
+        AppSnackbar.success(
+          context,
+          '${oldResults.docs.length} resultados antiguos eliminados',
         );
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error al obtener los datos. Inténtalo de nuevo.'), backgroundColor: Colors.red),
+        AppSnackbar.error(
+          context,
+          'Error al obtener los datos. Inténtalo de nuevo.',
         );
       }
     }
@@ -657,12 +776,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 final user = _auth.currentUser;
                 if (user == null || user.email == null) {
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Sesión expirada. Inicia sesión de nuevo.'),
-                        backgroundColor: Colors.red,
-                      ),
+                    AppSnackbar.error(
+                      context,
+                      'Sesión expirada. Inicia sesión de nuevo.',
                     );
                   }
                   return;
@@ -676,12 +792,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   await user.updatePassword(newController.text);
                   if (context.mounted) {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content:
-                        Text('Contraseña actualizada correctamente'),
-                        backgroundColor: Colors.green,
-                      ),
+                    AppSnackbar.success(
+                      context,
+                      'Contraseña actualizada correctamente',
                     );
                   }
                 } on FirebaseAuthException catch (e) {
@@ -692,11 +805,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     msg = 'La nueva contraseña es demasiado débil';
                   }
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(msg),
-                          backgroundColor: Colors.red),
-                    );
+                    AppSnackbar.error(context, msg);
                   }
                 }
               },
@@ -714,20 +823,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await _auth.sendPasswordResetEmail(email: email);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Email de recuperación enviado a $email'),
-            backgroundColor: Colors.green,
-          ),
+        AppSnackbar.success(
+          context,
+          'Email de recuperación enviado a $email',
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error al enviar el email de recuperación'),
-              backgroundColor: Colors.red),
-        );
+        AppSnackbar.error(context, 'Error al enviar el email de recuperación');
       }
     }
   }
@@ -737,12 +840,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (user == null) return;
 
     if (_schoolId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No tienes un centro escolar asignado'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppSnackbar.warning(context, 'No tienes un centro escolar asignado');
       return;
     }
 
@@ -835,10 +933,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error al obtener los datos. Inténtalo de nuevo.'),
-              backgroundColor: Colors.red),
+        AppSnackbar.error(
+          context,
+          'Error al obtener los datos. Inténtalo de nuevo.',
         );
       }
     }
@@ -891,20 +988,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               if (passwordController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Introduce tu contraseña')),
-                );
+                AppSnackbar.error(context, 'Introduce tu contraseña');
                 return;
               }
 
               final user = _auth.currentUser;
               if (user == null || user.email == null) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Sesión expirada. Inicia sesión de nuevo.'),
-                      backgroundColor: Colors.red,
-                    ),
+                  AppSnackbar.error(
+                    context,
+                    'Sesión expirada. Inicia sesión de nuevo.',
                   );
                 }
                 return;
@@ -978,29 +1071,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                         (route) => false,
                   );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content:
-                      Text('Cuenta y datos eliminados correctamente'),
-                      backgroundColor: Colors.green,
-                    ),
+                  AppSnackbar.success(
+                    context,
+                    'Cuenta y datos eliminados correctamente',
                   );
                 }
               } on FirebaseAuthException catch (e) {
                 String msg = 'Error al eliminar la cuenta';
                 if (e.code == 'wrong-password') msg = 'Contraseña incorrecta';
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(msg), backgroundColor: Colors.red),
-                  );
+                  AppSnackbar.error(context, msg);
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text('Error al eliminar la cuenta. Inténtalo de nuevo.'),
-                        backgroundColor: Colors.red),
+                  AppSnackbar.error(
+                    context,
+                    'Error al eliminar la cuenta. Inténtalo de nuevo.',
                   );
                 }
               }

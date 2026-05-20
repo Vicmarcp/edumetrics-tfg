@@ -21,28 +21,128 @@ class _CapitalizationActivityState
   // Frases donde una palabra necesita mayúscula (se muestra toda en minúsculas)
   // El niño debe tocar la palabra que necesita mayúscula
   final List<Map<String, dynamic>> _sentenceBank = [
-    // Inicio de frase (la primera palabra)
-    {'sentence': 'el gato duerme', 'correctIndex': 0, 'rule': 'inicio'},
-    {'sentence': 'la casa es grande', 'correctIndex': 0, 'rule': 'inicio'},
-    {'sentence': 'mi perro corre', 'correctIndex': 0, 'rule': 'inicio'},
-    {'sentence': 'un pato nada', 'correctIndex': 0, 'rule': 'inicio'},
-    {'sentence': 'la luna brilla', 'correctIndex': 0, 'rule': 'inicio'},
-    {'sentence': 'el sol calienta', 'correctIndex': 0, 'rule': 'inicio'},
-    {'sentence': 'una flor bonita', 'correctIndex': 0, 'rule': 'inicio'},
-    {'sentence': 'los pajaros cantan', 'correctIndex': 0, 'rule': 'inicio'},
+    // Inicio de frase
+    {
+      'sentence': 'el gato duerme',
+      'correctIndex': 0,
+      'rule': 'inicio',
+      'capitalized': 'El'
+    },
+    {
+      'sentence': 'la casa es grande',
+      'correctIndex': 0,
+      'rule': 'inicio',
+      'capitalized': 'La'
+    },
+    {
+      'sentence': 'mi perro corre',
+      'correctIndex': 0,
+      'rule': 'inicio',
+      'capitalized': 'Mi'
+    },
+    {
+      'sentence': 'un pato nada',
+      'correctIndex': 0,
+      'rule': 'inicio',
+      'capitalized': 'Un'
+    },
+    {
+      'sentence': 'la luna brilla',
+      'correctIndex': 0,
+      'rule': 'inicio',
+      'capitalized': 'La'
+    },
+    {
+      'sentence': 'el sol calienta',
+      'correctIndex': 0,
+      'rule': 'inicio',
+      'capitalized': 'El'
+    },
+    {
+      'sentence': 'una flor bonita',
+      'correctIndex': 0,
+      'rule': 'inicio',
+      'capitalized': 'Una'
+    },
+    {
+      'sentence': 'los pajaros cantan',
+      'correctIndex': 0,
+      'rule': 'inicio',
+      'capitalized': 'Los'
+    },
     // Nombres propios
-    {'sentence': 'yo soy maria', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'mi amigo pedro', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'ella es lucia', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'el perro toby', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'vivo en madrid', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'vamos a sevilla', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'mi gato luna', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'el rio tajo', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'mi amiga sofia', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'vivo en valencia', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'mi primo carlos', 'correctIndex': 2, 'rule': 'nombre'},
-    {'sentence': 'ella es ana', 'correctIndex': 2, 'rule': 'nombre'},
+    {
+      'sentence': 'yo soy maria',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'María'
+    },
+    {
+      'sentence': 'mi amigo pedro',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Pedro'
+    },
+    {
+      'sentence': 'ella es lucia',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Lucía'
+    },
+    {
+      'sentence': 'el perro toby',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Toby'
+    },
+    {
+      'sentence': 'vivo en madrid',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Madrid'
+    },
+    {
+      'sentence': 'vamos a sevilla',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Sevilla'
+    },
+    {
+      'sentence': 'mi gato luna',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Luna'
+    },
+    {
+      'sentence': 'el rio tajo',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Tajo'
+    },
+    {
+      'sentence': 'mi amiga sofia',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Sofía'
+    },
+    {
+      'sentence': 'vivo en valencia',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Valencia'
+    },
+    {
+      'sentence': 'mi primo carlos',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Carlos'
+    },
+    {
+      'sentence': 'ella es ana',
+      'correctIndex': 2,
+      'rule': 'nombre',
+      'capitalized': 'Ana'
+    },
   ];
 
   @override
@@ -51,13 +151,12 @@ class _CapitalizationActivityState
     final shuffled = List<Map<String, dynamic>>.from(_sentenceBank)
       ..shuffle(random);
     return shuffled.take(totalQuestions).map((item) {
-      final words = (item['sentence'] as String).split(' ');
-      final correctIndex = item['correctIndex'] as int;
       return {
         'sentence': item['sentence'],
-        'correctIndex': correctIndex,
+        'correctIndex': item['correctIndex'],
         'rule': item['rule'],
-        'correctAnswer': words[correctIndex],
+        // correctAnswer es la palabra ya capitalizada para mostrar en feedback
+        'correctAnswer': item['capitalized'],
       };
     }).toList();
   }
@@ -170,7 +269,7 @@ class _CapitalizationActivityState
   bool validateAnswer(Map<String, dynamic> question, dynamic userAnswer) {
     final sentence = question['sentence'] as String;
     final words = sentence.split(' ');
-    final correctWord = words[question['correctIndex'] as int];
-    return userAnswer.toString() == correctWord;
+    final lowercaseCorrect = words[question['correctIndex'] as int];
+    return userAnswer.toString() == lowercaseCorrect;
   }
 }

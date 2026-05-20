@@ -32,7 +32,8 @@ Cada actividad incluye un cronómetro invisible, variantes aleatorias para evita
 ### Dos modos de uso
 
 - **Modo Pizarra** — Interfaz táctil con botones grandes, optimizada para pantallas de 55 pulgadas o más. Los alumnos seleccionan respuestas con teclados numéricos táctiles adaptados a su edad.
-- **Modo Ordenador** — Panel de gestión para el profesor: administración de alumnos, estadísticas y configuración.
+- **Modo Ordenador** — Panel de gestión para el profesor: administración de alumnos, estadísticas y
+  configuración.
 
 ### Estadísticas y análisis
 

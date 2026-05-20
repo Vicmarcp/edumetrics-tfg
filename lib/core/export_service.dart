@@ -9,20 +9,15 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:web/web.dart' as web;
 
+import 'activity_names.dart';
+import 'analytics_service.dart';
+
 /// Servicio de exportación de datos a Excel y PDF.
 class ExportService {
-  static const Map<String, String> activityNames = {
-    'comparison': 'Comparación',
-    'sequence': 'Secuencia',
-    'place_value': 'Valor Posicional',
-    'addition': 'Sumas',
-    'subtraction': 'Restas',
-    'missing_vowels': 'Vocales',
-    'syllable_count': 'Sílabas',
-    'sentence_order': 'Ordenar Frases',
-    'capitalization': 'Mayúsculas',
-    'syllable_complete': 'Completar Sílabas',
-  };
+  /// Mapeo de claves de actividad a sus nombres legibles en español.
+  /// Se delega a [kActivityNames] para permitir uso desde tests sin
+  /// arrastrar dependencias web.
+  static const Map<String, String> activityNames = kActivityNames;
 
   // ═══════════════════════════════════════════
   //  EXPORTAR ALUMNO INDIVIDUAL — EXCEL
@@ -197,6 +192,9 @@ class ExportService {
     }
 
     if (excel.sheets.containsKey('Sheet1')) excel.delete('Sheet1');
+
+    AnalyticsService.exportPerformed(
+        type: 'student_excel', recordCount: results.length);
 
     final bytes = excel.encode();
     if (bytes != null) {
@@ -407,6 +405,9 @@ class ExportService {
       ),
     );
 
+    AnalyticsService.exportPerformed(
+        type: 'student_pdf', recordCount: results.length);
+
     final bytes = await pdf.save();
     await Printing.sharePdf(
       bytes: bytes,
@@ -538,6 +539,9 @@ class ExportService {
     }
 
     if (excel.sheets.containsKey('Sheet1')) excel.delete('Sheet1');
+
+    AnalyticsService.exportPerformed(
+        type: 'class_excel', recordCount: studentIds.length);
 
     final bytes = excel.encode();
     if (bytes != null) {
@@ -749,6 +753,9 @@ class ExportService {
         ],
       ),
     );
+
+    AnalyticsService.exportPerformed(
+        type: 'class_pdf', recordCount: studentIds.length);
 
     final bytes = await pdf.save();
     await Printing.sharePdf(

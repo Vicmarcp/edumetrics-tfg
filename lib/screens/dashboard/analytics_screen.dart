@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/ui_helpers.dart';
 import 'class_analytics_screen.dart';
 import 'student_analytics_screen.dart';
 
@@ -64,7 +65,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Análisis y Estadísticas')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const ListSkeleton(itemCount: 5),
       );
     }
 
@@ -149,7 +150,7 @@ class _StudentListTab extends StatelessWidget {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const ListSkeleton(itemCount: 5);
         }
 
         final students = snapshot.data?.docs ?? [];

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/accessibility_service.dart';
 import '../../core/export_service.dart';
+import '../../core/ui_helpers.dart';
 
 class StudentAnalyticsScreen extends StatefulWidget {
   final String studentId;
@@ -200,7 +201,16 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          LoadingSkeleton(height: 80),
+          SizedBox(height: 16),
+          LoadingSkeleton(height: 250),
+          SizedBox(height: 16),
+          LoadingSkeleton(height: 250),
+        ],
+      );
     }
 
     if (_errorMessage != null) {

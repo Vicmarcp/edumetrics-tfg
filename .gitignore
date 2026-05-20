@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 .claude/
+CLAUDE.md
 
 # IntelliJ related
 *.iml
@@ -46,7 +47,7 @@ app.*.map.json
 /android/app/release
 
 # Firebase credentials (estos archivos se excluyen del repositorio)
-**/firebase_options.dart
+# firebase_options.dart  lo commiteamos a propósito (ver README)
 .firebase/
 .firebaserc
 

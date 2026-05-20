@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/accessibility_service.dart';
 import '../../core/export_service.dart';
+import '../../core/ui_helpers.dart';
 
 class ClassAnalyticsScreen extends StatefulWidget {
   final String schoolId;
@@ -214,7 +215,7 @@ class _ClassAnalyticsScreenState extends State<ClassAnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const ListSkeleton(itemCount: 5);
     }
 
     if (_errorMessage != null) {

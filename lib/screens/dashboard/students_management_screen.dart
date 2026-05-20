@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/audit_service.dart';
+import '../../core/ui_helpers.dart';
 import 'add_student_screen.dart';
 import 'edit_student_screen.dart';
 
@@ -57,7 +58,7 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Gestionar Alumnos')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const ListSkeleton(itemCount: 5),
       );
     }
 
@@ -116,31 +117,22 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const ListSkeleton(itemCount: 6);
           }
 
           final students = snapshot.data?.docs ?? [];
 
           if (students.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.person_off, size: 80, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text('No hay alumnos registrados',
-                      style: TextStyle(fontSize: 18, color: Colors.grey[600])),
-                  const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('Crear primer alumno'),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AddStudentScreen()),
-                      );
-                    },
-                  ),
-                ],
+            return EmptyState(
+              icon: Icons.school_outlined,
+              title: 'Aún no tienes alumnos',
+              message: 'Añade el primer alumno para empezar a evaluar',
+              actionLabel: 'Añadir alumno',
+              onAction: () =>
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AddStudentScreen()),
               ),
             );
           }
@@ -243,18 +235,17 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
 
                 if (context.mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Alumno dado de baja correctamente'),
-                      backgroundColor: Colors.orange,
-                    ),
+                  AppSnackbar.success(
+                    context,
+                    'Alumno dado de baja correctamente',
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al modificar el alumno. Inténtalo de nuevo.'), backgroundColor: Colors.red),
+                  AppSnackbar.error(
+                    context,
+                    'Error al modificar el alumno. Inténtalo de nuevo.',
                   );
                 }
               }
@@ -330,19 +321,17 @@ class _StudentsManagementScreenState extends State<StudentsManagementScreen> {
 
                 if (context.mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'Alumno y todos sus datos eliminados permanentemente'),
-                      backgroundColor: Colors.red,
-                    ),
+                  AppSnackbar.success(
+                    context,
+                    'Alumno y todos sus datos eliminados permanentemente',
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error al eliminar el alumno. Inténtalo de nuevo.'), backgroundColor: Colors.red),
+                  AppSnackbar.error(
+                    context,
+                    'Error al eliminar el alumno. Inténtalo de nuevo.',
                   );
                 }
               }

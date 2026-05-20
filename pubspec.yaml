@@ -29,6 +29,9 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   fl_chart: ^1.2.0
+  package_info_plus: ^10.1.0
+  firebase_analytics: 12.3.0
+  connectivity_plus: ^6.0.5
   flutter:
     sdk: flutter
   flutter_localizations:

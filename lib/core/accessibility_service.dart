@@ -57,9 +57,26 @@ class AccessibilityService {
   static bool _ttsInitialized = false;
   static bool _isSpeaking = false;
 
+  // Regex para eliminar emojis del texto antes de enviarlo al sintetizador
+  static final RegExp _emojiRegex = RegExp(
+    r'[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|'
+    r'[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|'
+    r'[\u{FE00}-\u{FE0F}]|[\u{1F900}-\u{1F9FF}]|[\u{1FA00}-\u{1FA6F}]|'
+    r'[\u{1FA70}-\u{1FAFF}]|[\u{200D}]|[\u{20E3}]|[\u{E0020}-\u{E007F}]',
+    unicode: true,
+  );
+
+  static String _cleanForTts(String text) {
+    return text
+        .replaceAll(_emojiRegex, '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
   static Future<void> _initTts() async {
     if (_ttsInitialized) return;
     try {
+      await _tts.awaitSpeakCompletion(false);
       await _tts.setLanguage('es-ES');
       await _tts.setSpeechRate(0.55);
       await _tts.setVolume(1.0);
@@ -70,13 +87,25 @@ class AccessibilityService {
     } catch (_) {}
   }
 
+  /// Para y espera a que Chrome libere el sintetizador.
+  static Future<void> _stopAndWaitReady() async {
+    _isSpeaking = false;
+    try {
+      await _tts.stop();
+    } catch (_) {}
+    // Chrome necesita ~200ms tras cancel() para aceptar otra utterance
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+
   static Future<void> speak(String text) async {
     if (!ttsEnabled.value || text.isEmpty) return;
     await _initTts();
+    final clean = _cleanForTts(text);
+    if (clean.isEmpty) return;
     try {
-      await _tts.stop();
+      await _stopAndWaitReady();
       _isSpeaking = true;
-      await _tts.speak(text);
+      await _tts.speak(clean);
     } catch (_) {
       _isSpeaking = false;
     }
@@ -85,12 +114,16 @@ class AccessibilityService {
   static Future<void> speakAndWait(String text) async {
     if (!ttsEnabled.value || text.isEmpty) return;
     await _initTts();
+    final clean = _cleanForTts(text);
+    if (clean.isEmpty) return;
     try {
-      await _tts.stop();
+      await _stopAndWaitReady();
       _isSpeaking = true;
-      await _tts.speak(text);
-      // Esperar a que termine (polling simple, compatible con web)
-      final maxWait = text.length * 80 + 1000; // ~80ms por carácter + margen
+      await _tts.speak(clean);
+      // Gracia inicial: dejar que el motor arranque (o falle) antes de sondear
+      await Future.delayed(const Duration(milliseconds: 250));
+      // Esperar a que termine (polling compatible con web)
+      final maxWait = clean.length * 100 + 2000;
       var waited = 0;
       while (_isSpeaking && waited < maxWait) {
         await Future.delayed(const Duration(milliseconds: 100));
@@ -102,10 +135,7 @@ class AccessibilityService {
   }
 
   static Future<void> stopSpeaking() async {
-    try {
-      _isSpeaking = false;
-      await _tts.stop();
-    } catch (_) {}
+    await _stopAndWaitReady();
   }
 
   // ── Alto contraste ──
