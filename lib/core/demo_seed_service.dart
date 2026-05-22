@@ -142,55 +142,71 @@ class DemoSeedService {
     return 'OK: $studentsCreated alumnos y $resultsCreated resultados creados';
   }
 
-  /// Elimina todos los datos marcados como demo.
+  /// Elimina todos los datos marcados como demo del centro del usuario actual.
   static Future<String> clearDemoData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return 'Error: no hay sesión activa';
 
-    int studentsDeleted = 0;
-    int resultsDeleted = 0;
-
-    // Eliminar resultados demo
-    final demoResults = await _firestore
-        .collection('results')
-        .where('isDemo', isEqualTo: true)
-        .get();
-
-    var batch = _firestore.batch();
-    var count = 0;
-    for (final doc in demoResults.docs) {
-      batch.delete(doc.reference);
-      count++;
-      if (count >= 499) {
-        await batch.commit();
-        batch = _firestore.batch();
-        count = 0;
+    try {
+      // Obtener el schoolId del usuario actual
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return 'Error: usuario no encontrado';
+      final schoolId = userDoc.data()?['schoolId'] as String?;
+      if (schoolId == null || schoolId.isEmpty) {
+        return 'Error: usuario sin schoolId asignado';
       }
-      resultsDeleted++;
-    }
-    if (count > 0) await batch.commit();
 
-    // Eliminar alumnos demo
-    final demoStudents = await _firestore
-        .collection('students')
-        .where('isDemo', isEqualTo: true)
-        .get();
+      int studentsDeleted = 0;
+      int resultsDeleted = 0;
 
-    batch = _firestore.batch();
-    count = 0;
-    for (final doc in demoStudents.docs) {
-      batch.delete(doc.reference);
-      count++;
-      if (count >= 499) {
-        await batch.commit();
-        batch = _firestore.batch();
-        count = 0;
+      // Eliminar resultados demo del centro del usuario
+      final demoResults = await _firestore
+          .collection('results')
+          .where('schoolId', isEqualTo: schoolId)
+          .where('isDemo', isEqualTo: true)
+          .get();
+
+      var batch = _firestore.batch();
+      var count = 0;
+      for (final doc in demoResults.docs) {
+        batch.delete(doc.reference);
+        count++;
+        if (count >= 499) {
+          await batch.commit();
+          batch = _firestore.batch();
+          count = 0;
+        }
+        resultsDeleted++;
       }
-      studentsDeleted++;
-    }
-    if (count > 0) await batch.commit();
+      if (count > 0) await batch.commit();
 
-    return 'OK: $studentsDeleted alumnos y $resultsDeleted resultados eliminados';
+      // Eliminar alumnos demo del centro del usuario
+      final demoStudents = await _firestore
+          .collection('students')
+          .where('schoolId', isEqualTo: schoolId)
+          .where('isDemo', isEqualTo: true)
+          .get();
+
+      batch = _firestore.batch();
+      count = 0;
+      for (final doc in demoStudents.docs) {
+        batch.delete(doc.reference);
+        count++;
+        if (count >= 499) {
+          await batch.commit();
+          batch = _firestore.batch();
+          count = 0;
+        }
+        studentsDeleted++;
+      }
+      if (count > 0) await batch.commit();
+
+      return 'OK: $studentsDeleted alumnos y $resultsDeleted resultados eliminados';
+    } on FirebaseException catch (e) {
+      return 'Error de Firebase: ${e.code} - ${e.message}';
+    } catch (e) {
+      return 'Error inesperado: $e';
+    }
   }
 
   // ── Generación de preguntas realistas ──
