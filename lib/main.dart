@@ -2,8 +2,10 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'core/accessibility_service.dart';
 import 'core/analytics_service.dart';
@@ -19,23 +21,59 @@ import 'screens/login_screen.dart';
 final ValueNotifier<ThemeMode> themeNotifier =
 ValueNotifier(ThemeMode.light);
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+/// DSN público de Sentry. Es semi-público por diseño (solo permite escribir
+/// eventos, no leerlos). Aceptable en el repo; en el futuro lo moveremos a
+/// variable de entorno cuando configuremos secrets en CI.
+const _sentryDsn =
+    'https://85409b0fd84fd620c74d8b8e15432d9a@o4511438008287232.ingest.de.sentry.io/4511438017724496';
+
+Future<void> main() async {
+  await SentryFlutter.init(
+        (options) {
+      options.dsn = _sentryDsn;
+
+      // Sentry separa issues por entorno: 'production' en release,
+      // 'development' en debug local. Así no se mezclan errores reales
+      // con bugs de desarrollo.
+      options.environment = kReleaseMode ? 'production' : 'development';
+
+      // Captura el 10% de las transacciones de performance (no errores).
+      // Cuidamos la cuota del plan gratuito.
+      options.tracesSampleRate = 0.1;
+
+      // En debug imprime logs internos de Sentry en consola; en release no.
+      options.debug = kDebugMode;
+    },
+    appRunner: () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+
+      try {
+        await FirebaseAppCheck.instance.activate(
+          providerWeb: ReCaptchaV3Provider(
+              '6Ld53JMsAAAAALhBVb4aPtHr01xeBxjqFmbmnI4M'),
+        );
+        await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+        ConnectivityService.initialize();
+      } catch (e, stack) {
+        // Antes era `catch (_) {}` y se perdía el error en silencio.
+        // Ahora lo mandamos a Sentry para poder diagnosticarlo si ocurre.
+        await Sentry.captureException(e, stackTrace: stack);
+      }
+
+      // Mensaje de prueba para verificar que la integración funciona.
+      // REMOVER en un PR posterior una vez confirmado que llega al dashboard.
+      await Sentry.captureMessage(
+        'Sentry integrado correctamente en EduMetrics',
+        level: SentryLevel.info,
+      );
+
+      runApp(const EduMetricsApp());
+    },
   );
-
-  try {
-    await FirebaseAppCheck.instance.activate(
-      providerWeb: ReCaptchaV3Provider(
-          '6Ld53JMsAAAAALhBVb4aPtHr01xeBxjqFmbmnI4M'),
-    );
-    await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
-    ConnectivityService.initialize();
-  } catch (_) {}
-
-
-  runApp(const EduMetricsApp());
 }
 
 class EduMetricsApp extends StatelessWidget {
@@ -62,7 +100,6 @@ class EduMetricsApp extends StatelessWidget {
                       debugShowCheckedModeBanner: false,
                       navigatorObservers: [AnalyticsService.observer],
                       themeMode: currentMode,
-
                       locale: const Locale('es', 'ES'),
                       supportedLocales: const [Locale('es', 'ES')],
                       localizationsDelegates: const [
@@ -70,7 +107,6 @@ class EduMetricsApp extends StatelessWidget {
                         GlobalWidgetsLocalizations.delegate,
                         GlobalCupertinoLocalizations.delegate,
                       ],
-
                       theme: _buildTheme(
                         Brightness.light,
                         fontFamily,
@@ -81,7 +117,6 @@ class EduMetricsApp extends StatelessWidget {
                         fontFamily,
                         highContrast,
                       ),
-
                       builder: (context, child) {
                         return MediaQuery(
                           data: MediaQuery.of(context).copyWith(
@@ -90,7 +125,6 @@ class EduMetricsApp extends StatelessWidget {
                           child: child!,
                         );
                       },
-
                       initialRoute: '/',
                       routes: {
                         '/': (_) => const ConnectivityBanner(child: AuthGate()),
