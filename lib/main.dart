@@ -43,6 +43,13 @@ Future<void> main() async {
 
       // En debug imprime logs internos de Sentry en consola; en release no.
       options.debug = kDebugMode;
+      // Release tracking: cada build se etiqueta con su SHA de Git.
+      // Esto permite saber en qué deploy exacto apareció cada error
+      // y ver el diff con la versión anterior cuando se rompe algo.
+      const release = String.fromEnvironment('SENTRY_RELEASE');
+      if (release.isNotEmpty) {
+        options.release = 'edumetrics@$release';
+      }
     },
     appRunner: () async {
       WidgetsFlutterBinding.ensureInitialized();
@@ -63,13 +70,6 @@ Future<void> main() async {
         // Ahora lo mandamos a Sentry para poder diagnosticarlo si ocurre.
         await Sentry.captureException(e, stackTrace: stack);
       }
-
-      // Mensaje de prueba para verificar que la integración funciona.
-      // REMOVER en un PR posterior una vez confirmado que llega al dashboard.
-      await Sentry.captureMessage(
-        'Sentry integrado correctamente en EduMetrics',
-        level: SentryLevel.info,
-      );
 
       runApp(const EduMetricsApp());
     },
@@ -210,6 +210,22 @@ class AuthGate extends StatelessWidget {
         }
 
         final user = snapshot.data;
+
+        // Sincroniza el contexto de Sentry con el estado de autenticación.
+        // Si hay usuario, Sentry sabrá qué profesor experimentó cada error.
+        // Si no hay usuario, limpia el contexto para no atribuir errores ajenos.
+        if (user != null) {
+          Sentry.configureScope((scope) {
+            scope.setUser(SentryUser(
+              id: user.uid,
+              // NO incluimos email por defecto (RGPD - datos de menores).
+              // Si necesitas debug local, descomenta la línea siguiente:
+              // email: user.email,
+            ));
+          });
+        } else {
+          Sentry.configureScope((scope) => scope.setUser(null));
+        }
 
         if (user == null) {
           return const LoginScreen();
