@@ -1,7 +1,8 @@
 # EduMetrics
 ![CI](https://github.com/Vicmarcp/edumetrics-tfg/actions/workflows/ci.yml/badge.svg)
 
-**Sistema de evaluación interactiva para Educación Primaria**
+**🎓 App web Flutter + Firebase para evaluación interactiva en Primaria | TFG DAM | App Check (
+reCAPTCHA), RGPD, CI/CD con GitHub Actions**
 
 Aplicación web desarrollada con Flutter que permite a los profesores evaluar competencias de matemáticas y lengua en alumnos de 1º de Primaria (6-7 años) mediante actividades interactivas en pizarras digitales táctiles, con seguimiento estadístico individual y grupal en tiempo real.
 
@@ -64,7 +65,7 @@ La aplicación trabaja con datos de menores de edad. Se han implementado las sig
 - Protección contra fuerza bruta (bloqueo temporal tras intentos fallidos)
 
 ### Protección de datos
-- Firebase App Check con reCAPTCHA Enterprise
+- - Firebase App Check (reCAPTCHA) para protección frente a abuso de API
 - Firestore Security Rules con validación de estructura de datos
 - Aislamiento de datos por centro educativo (schoolId)
 - Resultados inmutables (no pueden ser modificados una vez creados)
@@ -93,13 +94,15 @@ La aplicación trabaja con datos de menores de edad. Se han implementado las sig
 ## Tecnologías
 
 | Componente           | Tecnología                                     |
-| -------------------- | ---------------------------------------------- |
+|----------------------|------------------------------------------------|
 | Framework            | Flutter 3.33+ (web)                            |
 | Lenguaje             | Dart                                           |
 | Backend              | Firebase (Auth, Firestore, Hosting, App Check) |
 | Gráficas             | fl_chart                                       |
 | Hosting              | Firebase Hosting                               |
 | Control de versiones | Git / GitHub                                   |
+| Monitorización       | Sentry (tracking de errores en producción)     |
+| CI/CD                | GitHub Actions (analyze, test, deploy)         |
 
 ---
 
@@ -159,7 +162,7 @@ lib/
 1. **Clonar el repositorio:**
 
     ```bash
-    git clone https://github.com/TU_USUARIO/edumetrics.git
+    git clone https://github.com/Vicmarcp/edumetrics-tfg.git
     cd edumetrics
     ```
 
@@ -216,7 +219,16 @@ Campos:
 
 ## Capturas de pantalla
 
-*(Próximamente)*
+### Inicio de sesión
+<img alt="Pantalla de inicio de sesión" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\login.jpg" title="Pantalla de inicio de sesión"/>
+### Panel del profesor
+<img alt="Panel principal del profesor" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\Modo desktop.jpg" title="Panel principal del profesor"/>
+### Gestión de alumnos
+<img alt="Gestión de alumnos" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\Selector alumno.jpg" title="Gestión de alumnos"/>
+### Actividad en marcha
+<img alt="Actividad de sumas básicas" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\Sumas basicas.jpg" title="Actividad de sumas básicas"/>
+### Estadísticas y análisis
+<img alt="Panel de analíticas con gráficas" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\Graficas por alumno.jpg" title="Panel de analíticas con gráficas"/>
 
 ---
 
