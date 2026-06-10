@@ -12,6 +12,7 @@ import 'core/analytics_service.dart';
 import 'core/app_mode.dart';
 import 'core/connectivity_service.dart';
 import 'core/inactivity_service.dart';
+import 'core/posthog_service.dart';
 import 'firebase_options.dart';
 import 'screens/email_verification_screen.dart';
 import 'screens/home_screen.dart';
@@ -211,20 +212,18 @@ class AuthGate extends StatelessWidget {
 
         final user = snapshot.data;
 
-        // Sincroniza el contexto de Sentry con el estado de autenticación.
-        // Si hay usuario, Sentry sabrá qué profesor experimentó cada error.
-        // Si no hay usuario, limpia el contexto para no atribuir errores ajenos.
+        // Sincroniza Sentry y PostHog con el estado de autenticación.
         if (user != null) {
           Sentry.configureScope((scope) {
             scope.setUser(SentryUser(
               id: user.uid,
-              // NO incluimos email por defecto (RGPD - datos de menores).
-              // Si necesitas debug local, descomenta la línea siguiente:
-              // email: user.email,
+              // email: user.email, // RGPD: no enviamos email
             ));
           });
+          PosthogService.identify(user.uid);
         } else {
           Sentry.configureScope((scope) => scope.setUser(null));
+          PosthogService.reset();
         }
 
         if (user == null) {
