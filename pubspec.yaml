@@ -54,6 +54,7 @@ dependencies:
   firebase_auth: ^6.5.1
   cloud_firestore: ^6.4.1
   sentry_flutter: ^9.20.0
+  posthog_flutter: ^5.26.0
 
 dev_dependencies:
   flutter_test:
