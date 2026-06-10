@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/accessibility_service.dart';
 import '../../core/analytics_service.dart';
+import '../../core/posthog_service.dart';
 import 'activity_summary_screen.dart';
 
 abstract class BaseActivityScreen extends StatefulWidget {
@@ -65,6 +66,10 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
       }
     });
     AnalyticsService.activityStarted(widget.activityType);
+    PosthogService.capture(
+      'actividad_iniciada',
+      properties: {'tipo_actividad': widget.activityType},
+    );
   }
 
   @override
@@ -250,6 +255,10 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
 
   Future<void> _startActivity() async {
     await AccessibilityService.stopSpeaking();
+    PosthogService.capture(
+      _tutorialAnswered ? 'tutorial_completado' : 'tutorial_saltado',
+      properties: {'tipo_actividad': widget.activityType},
+    );
     setState(() {
       _showingTutorial = false;
     });
@@ -288,6 +297,15 @@ abstract class BaseActivityState<T extends BaseActivityScreen>
       correctAnswers: correctCount,
       totalQuestions: totalQuestions,
       durationSeconds: duration,
+    );
+    PosthogService.capture(
+      'actividad_completada',
+      properties: {
+        'tipo_actividad': widget.activityType,
+        'aciertos': correctCount,
+        'total_preguntas': totalQuestions,
+        'duracion_segundos': duration,
+      },
     );
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
