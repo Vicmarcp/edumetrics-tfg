@@ -65,7 +65,7 @@ La aplicación trabaja con datos de menores de edad. Se han implementado las sig
 - Protección contra fuerza bruta (bloqueo temporal tras intentos fallidos)
 
 ### Protección de datos
-- - Firebase App Check (reCAPTCHA) para protección frente a abuso de API
+- Firebase App Check (reCAPTCHA) para protección frente a abuso de API
 - Firestore Security Rules con validación de estructura de datos
 - Aislamiento de datos por centro educativo (schoolId)
 - Resultados inmutables (no pueden ser modificados una vez creados)
