@@ -220,29 +220,15 @@ Campos:
 ## Capturas de pantalla
 
 ### Inicio de sesión
-
-![Pantalla de inicio de sesión](assets/screenshots/login.jpg)
-
-### Modo Pizarra — interfaz táctil del alumno
-![Modo pizarra táctil](assets/screenshots/modo-pizarra.jpg)
-
-### Actividad en marcha
-![Actividad de sumas básicas](assets/screenshots/sumas-basicas.jpg)
-
-### Resultado de la actividad
-![Ejercicio finalizado](assets/screenshots/ejercicio-finalizado.jpg)
-
-### Modo Ordenador — panel del profesor
-![Panel de gestión en modo escritorio](assets/screenshots/modo-desktop.jpg)
-
+<img alt="Pantalla de inicio de sesión" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\login.jpg" title="Pantalla de inicio de sesión"/>
+### Panel del profesor
+<img alt="Panel principal del profesor" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\Modo desktop.jpg" title="Panel principal del profesor"/>
 ### Gestión de alumnos
-![Gestor de alumnos](assets/screenshots/gestor-alumnos.jpg)
-
-### Estadísticas por alumno
-![Gráficas individuales por alumno](assets/screenshots/graficas-alumno.jpg)
-
-### Estadísticas por clase
-![Gráficas comparativas por clase](assets/screenshots/graficas-clase.jpg)
+<img alt="Gestión de alumnos" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\Selector alumno.jpg" title="Gestión de alumnos"/>
+### Actividad en marcha
+<img alt="Actividad de sumas básicas" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\Sumas basicas.jpg" title="Actividad de sumas básicas"/>
+### Estadísticas y análisis
+<img alt="Panel de analíticas con gráficas" src="C:\Users\Administrador\Desktop\edumetrics\assets\screenshots\Graficas por alumno.jpg" title="Panel de analíticas con gráficas"/>
 
 ---
 
